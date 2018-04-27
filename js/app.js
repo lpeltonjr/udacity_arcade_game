@@ -11,37 +11,44 @@ var Enemy = function() {
     // a helper we've provided to easily load images
     this.sprite = 'images/enemy-bug.png';
 
+	//	set up the enemy's position and speed so the Enemy.recalibrate() method
+	//	will trigger immediately
 	this.x = canvasWidth * 2;
 	this.y = 0;
 	this.speed = 0;
 };
 
+
+//	this handles enemy movement: x and y positions, as well as speed,
+//	are recalibrated after an enemy passes beyond right border of the gameboard;
+Enemy.prototype.recalibrate = function() {
+	if (this.x > canvasWidth) {
+		//	start the enemy somewhere off the left side of the board such that it is
+		//	offset from other enemies moved off the left side of the board
+		this.x = randomValue(1, canvasTilesX) * tileAbsWidth * -1;
+		//	reposition the enemy on a random vertical tile, but not in the water
+		//	(thus the lower limit is 1, not 0)
+		this.y = randomValue(1, canvasTilesY) * tileVisHeight;
+		//	assign a new speed to the enemy
+		this.speed = randomValue(slowSpeed, fastSpeed);
+	}
+};
+
 // Update the enemy's position, required method for game
-// Parameter: dt, a time delta between ticks
+// Parameter: dt, a time delta between ticks -- IN SECONDS !!!!
 Enemy.prototype.update = function(dt) {
-    // You should multiply any movement by the dt parameter
-    // which will ensure the game runs at the same speed for
-    // all computers.
+
+	//	keep recalibrating properties of enemies that advance past the right
+	//	edge of the gameboard
+	this.recalibrate();
+	
+	//	calculate the new position: pixels = pixels/sec * elapsed seconds
+	this.x += (this.speed * dt);
 };
 
 // Draw the enemy on the screen, required method for game
 Enemy.prototype.render = function() {
-	this.recalibrate();
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
-};
-
-Enemy.prototype.recalibrate = function() {
-	if (this.x > canvasWidth) {
-		//	start the enemy somewhere off the left side of the board
-		this.x = randomValue(1, canvasTilesX) * tileAbsWidth * -1;
-		this.y = randomValue(1, canvasTilesY) * tileVisHeight;
-		
-		this.speed = randomValue(slowSpeed, fastSpeed);
-	}
-	else
-	{
-		this.x += this.speed;
-	}
 };
 
 // Now write your own player class
