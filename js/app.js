@@ -2,8 +2,20 @@ function randomValue(lowerLimit, upperLimit) {
 	return (Math.floor(Math.random() * (upperLimit - lowerLimit)) + lowerLimit);
 }
 
+//	base class in entity prototype chain
+let Entity = function(image) {
+	
+	this.sprite = image;
+	this.x = 0;
+	this.y = 0;
+};
+
+Entity.prototype.render = function() {
+	ctx.drawImage(Resources.get(this.sprite), this.x, this.y);	
+};
+
 // Enemies our player must avoid
-var Enemy = function() {
+let Enemy = function() {
     // Variables applied to each of our instances go here,
     // we've provided one for you to get started
 
@@ -18,6 +30,7 @@ var Enemy = function() {
 	this.speed = 0;
 };
 
+Enemy.prototype = Entity.prototype;
 
 //	this handles enemy movement: x and y positions, as well as speed,
 //	are recalibrated after an enemy passes beyond right border of the gameboard;
@@ -46,15 +59,33 @@ Enemy.prototype.update = function(dt) {
 	this.x += (this.speed * dt);
 };
 
-// Draw the enemy on the screen, required method for game
-Enemy.prototype.render = function() {
-    ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
-};
 
 // Now write your own player class
 // This class requires an update(), render() and
 // a handleInput() method.
+let Player = function() {
 
+	this.sprite = 'images/char-boy.png';
+	
+	this.x = 0;
+	this.y = 0;
+	
+	this.handleInput = function(key) {
+		
+		switch (key)
+		{
+			case 'left':
+				break;
+			case 'right':
+				break;
+			default:
+				break;
+		}
+	};
+	
+};
+
+Player.prototype = Entity.prototype;
 
 // Now instantiate your objects.
 // Place all enemy objects in an array called allEnemies
@@ -64,6 +95,8 @@ for (let i = 0; i < enemyCount; i++)
 {
 	allEnemies.push(new Enemy());
 }
+
+player = new Player();
 
 
 // This listens for key presses and sends the keys to your
