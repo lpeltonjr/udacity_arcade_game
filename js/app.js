@@ -2,34 +2,50 @@ function randomValue(lowerLimit, upperLimit) {
 	return (Math.floor(Math.random() * (upperLimit - lowerLimit)) + lowerLimit);
 }
 
+
+//***********************************************************************************
+//***********************************************************************************
+//	the Entity class -- used only to establish inheritance
+//***********************************************************************************
+//***********************************************************************************
 //	base class in entity prototype chain
 let Entity = function(image) {
 	
-	this.sprite = image;
-	this.x = 0;
-	this.y = 0;
+	this.sprite;
 };
 
+//	initially locate all entities off the right edge of the gameboard; this will
+//	serve to trigger the recalibrate methods of the entities;
+//	this is a primitive property, so it will be copied to child objects
+Entity.prototype.x = canvasWidth * 2;
+
+//	the vertical position will be initialized by the recalibration methods;
+//	this is a primitive property, so it will be copied to child objects
+Entity.prototype.y = 0;
+
+//	this method will be common to all entities;
+//	as a method, this single function is referenced by all child objects
 Entity.prototype.render = function() {
 	ctx.drawImage(Resources.get(this.sprite), this.x, this.y);	
 };
 
-// Enemies our player must avoid
+
+//***********************************************************************************
+//***********************************************************************************
+//	the Enemy class -- player must avoid these
+//***********************************************************************************
+//***********************************************************************************
 let Enemy = function() {
-    // Variables applied to each of our instances go here,
-    // we've provided one for you to get started
 
     // The image/sprite for our enemies, this uses
     // a helper we've provided to easily load images
     this.sprite = 'images/enemy-bug.png';
 
-	//	set up the enemy's position and speed so the Enemy.recalibrate() method
-	//	will trigger immediately
-	this.x = canvasWidth * 2;
-	this.y = 0;
+	//	actual speed will be initialized in the recalibration method for this object
 	this.speed = 0;
 };
 
+//	an Enemy is an Entity, no matter how bad
 Enemy.prototype = Entity.prototype;
 
 //	this handles enemy movement: x and y positions, as well as speed,
@@ -60,15 +76,14 @@ Enemy.prototype.update = function(dt) {
 };
 
 
-// Now write your own player class
-// This class requires an update(), render() and
-// a handleInput() method.
+//***********************************************************************************
+//***********************************************************************************
+//	the Player class
+//***********************************************************************************
+//***********************************************************************************
 let Player = function() {
 
 	this.sprite = 'images/char-boy.png';
-	
-	this.x = 0;
-	this.y = 0;
 	
 	this.handleInput = function(key) {
 		
