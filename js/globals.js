@@ -12,6 +12,7 @@ const canvasTilesY = 6;
 //	absolute width in pixels of a gameboard tile
 const tileAbsWidth	= 101;
 
+
 const canvasWidth = canvasTilesX * tileAbsWidth;
 const canvasHeight = canvasTilesY * tileAbsWidth;
 

@@ -23,10 +23,33 @@ Entity.prototype.x = canvasWidth * 2;
 //	this is a primitive property, so it will be copied to child objects
 Entity.prototype.y = 0;
 
+//	width in pixels of an entity image -- for detecting collisions
+Entity.prototype.width = tileAbsWidth;
+
 //	this method will be common to all entities;
 //	as a method, this single function is referenced by all child objects
 Entity.prototype.render = function() {
 	ctx.drawImage(Resources.get(this.sprite), this.x, this.y);	
+};
+
+//	given reference to another entity, this method returns true if
+//	this entity has collided with it
+Entity.prototype.collisionWithThat = function(that) {
+	
+	let intersection;
+	
+	//	if this entity is ahead of that entity ...
+	if (this.x > that.x) {
+		intersection = that.x + that.width - this.x;
+	} else {
+		intersection = this.x + this.width - that.x;
+	}
+	
+	if ((intersection > 0) && (intersection <= this.width)) {
+		return true;
+	}
+
+	return false;
 };
 
 
