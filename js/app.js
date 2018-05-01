@@ -36,17 +36,22 @@ Entity.prototype.render = function() {
 //	this entity has collided with it
 Entity.prototype.collisionWithThat = function(that) {
 	
-	let intersection;
+	let intersectX;
+	let intersectY;
+
+	if ((this.y === that.y) && (that.state !== "dead")) {
+		//	if this entity is ahead of that entity ...
+		if (this.x > that.x) {
+			intersectX = that.x + that.width - this.x;
+		} else {
+			intersectX = this.x + this.width - that.x;
+		}
 	
-	//	if this entity is ahead of that entity ...
-	if (this.x > that.x) {
-		intersection = that.x + that.width - this.x;
-	} else {
-		intersection = this.x + this.width - that.x;
-	}
-	
-	if ((intersection > 0) && (intersection <= this.width)) {
-		return true;
+		//	collision will occur at the center of a tile, not at the left corner
+		if ((intersectX > (this.width / 2)) && (intersectX <= this.width)) {
+			that.state = "dead";
+			return true;
+		}
 	}
 
 	return false;
@@ -63,6 +68,8 @@ let Enemy = function() {
     // The image/sprite for our enemies, this uses
     // a helper we've provided to easily load images
     this.sprite = 'images/enemy-bug.png';
+	
+	this.state = "living";
 
 	//	actual speed will be initialized in the recalibration method for this object
 	this.speed = 0;
@@ -80,7 +87,7 @@ Enemy.prototype.recalibrate = function() {
 		this.x = randomValue(1, canvasTilesX) * tileAbsWidth * -1;
 		//	reposition the enemy on a random vertical tile, but not in the water
 		//	(thus the lower limit is 1, not 0)
-		this.y = randomValue(1, canvasTilesY) * tileVisHeight;
+		this.y = (randomValue(1, canvasTilesY) * tileVisHeight) - entityVerticalShift;
 		//	assign a new speed to the enemy
 		this.speed = randomValue(slowSpeed, fastSpeed);
 	}
@@ -96,6 +103,11 @@ Enemy.prototype.update = function(dt) {
 	
 	//	calculate the new position: pixels = pixels/sec * elapsed seconds
 	this.x += (this.speed * dt);
+
+	//	check for a collision with the player; if so, execute the player's die() method
+	if (this.collisionWithThat(player)) {
+		player.die();
+	}
 };
 
 
@@ -108,16 +120,60 @@ let Player = function() {
 
 	this.sprite = 'images/char-boy.png';
 	
+	this.state = "living";
+	
 	this.handleInput = function(key) {
 		
 		switch (key)
 		{
 			case 'left':
+				if (this.x >= this.width) {
+					this.x -= this.width;
+				}
 				break;
+
 			case 'right':
+				if ((canvasWidth - this.x) > this.width) {
+					this.x += this.width;
+				}
 				break;
+
+			case 'up':
+				if (this.y > (tileVisHeight - entityVerticalShift)) {
+					this.y -= tileVisHeight;
+				}
+				break;
+
+			case 'down':
+				if (this.y < (((canvasTilesY - 1) * tileVisHeight) - entityVerticalShift))
+				{
+					this.y += tileVisHeight;
+				}
+				break;
+
 			default:
 				break;
+		}
+	};
+
+	//	when player dies via collision with enemy, shift the player off the right
+	//	edge of the gameboard so that recalibrate() will reset it to the start position
+	this.die = function() {
+		this.x = canvasWidth * 2;
+		console.log("player killed");
+	};
+
+	this.update = function() {
+		//	if the player is offscreen, it's a signal to reset his position
+		//	to the starting tile
+		if (this.x > canvasWidth)
+		{
+			//	starting x position is next-to-last horizontal tile
+			this.x = canvasWidth - (2 * this.width);
+			//	starting y position is centered over bottom tile
+			this.y = ((canvasTilesY - 1) * tileVisHeight) - entityVerticalShift;
+			
+			this.state = "living";
 		}
 	};
 	

@@ -22,6 +22,8 @@ const canvasHeight = canvasTilesY * tileAbsWidth;
 const tileSlop = 4;
 const tileAbsHeight = 171;
 const tileVisHeight = ((canvasHeight - tileAbsHeight) / (canvasTilesY - 1)) - tileSlop;
+//	this centers the entity vertically on a visible tile
+const entityVerticalShift = (tileAbsHeight - tileVisHeight) / 4;
 
 //	these speed settings for enemy bugs are entirely arbitrary, in pixels/sec;
 //	set the slowest speed so that it takes 2 seconds to cross the canvas;
@@ -31,7 +33,7 @@ const fastSpeed = slowSpeed * 4;
 
 //	this isn't specified in the project rubric, so I've just picked a number; in a multi-level game
 //	it should be less on easier levels and more on higher levels
-const enemyCount = 9;
+const enemyCount = 1;
 //	*****************************************************************************
 //	*****************************************************************************
 //	NOTE also that I'm not changing the var declarations in received files to 'const' or
