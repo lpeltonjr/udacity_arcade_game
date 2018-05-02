@@ -18,13 +18,25 @@ let Entity = function(image) {
 //	serve to trigger the recalibrate methods of the entities;
 //	this is a primitive property, so it will be copied to child objects
 Entity.prototype.x = canvasWidth * 2;
+Entity.prototype.xTile = canvasTilesX * 2;
 
 //	the vertical position will be initialized by the recalibration methods;
 //	this is a primitive property, so it will be copied to child objects
 Entity.prototype.y = 0;
+Entity.prototype.yTile = 0;
 
 //	width in pixels of an entity image -- for detecting collisions
 Entity.prototype.width = tileAbsWidth;
+
+//	given a tile row number, this function returns the entity's required y value in pixels
+Entity.prototype.yFROMyTile = function() {
+	return(this.yTile * tileVisHeight - entityVerticalShift);
+};
+
+//	given a tile column number, this function returns the entity's required x value in pixels
+Entity.prototype.xFROMxTile = function() {
+	return (this.xTile * this.width);
+};
 
 //	this method will be common to all entities;
 //	as a method, this single function is referenced by all child objects
@@ -39,7 +51,8 @@ Entity.prototype.collisionWithThat = function(that) {
 	let intersectX;
 	let intersectY;
 
-	if ((this.y === that.y) && (that.state !== "dead")) {
+	//	collisions require identical y values
+	if (this.y === that.y) {
 		//	if this entity is ahead of that entity ...
 		if (this.x > that.x) {
 			intersectX = that.x + that.width - this.x;
@@ -49,7 +62,6 @@ Entity.prototype.collisionWithThat = function(that) {
 	
 		//	collision will occur at the center of a tile, not at the left corner
 		if ((intersectX > (this.width / 2)) && (intersectX <= this.width)) {
-			that.state = "dead";
 			return true;
 		}
 	}
@@ -69,8 +81,6 @@ let Enemy = function() {
     // a helper we've provided to easily load images
     this.sprite = 'images/enemy-bug.png';
 	
-	this.state = "living";
-
 	//	actual speed will be initialized in the recalibration method for this object
 	this.speed = 0;
 };
@@ -84,10 +94,14 @@ Enemy.prototype.recalibrate = function() {
 	if (this.x > canvasWidth) {
 		//	start the enemy somewhere off the left side of the board such that it is
 		//	offset from other enemies moved off the left side of the board
-		this.x = randomValue(1, canvasTilesX) * tileAbsWidth * -1;
+		this.xTile = randomValue(1, canvasTilesX);
+		this.x = this.xFROMxTile() * -1;
+		
 		//	reposition the enemy on a random vertical tile, but not in the water
 		//	(thus the lower limit is 1, not 0)
-		this.y = (randomValue(1, canvasTilesY) * tileVisHeight) - entityVerticalShift;
+		this.yTile = randomValue(1, canvasTilesY);
+		this.y = this.yFROMyTile();
+		
 		//	assign a new speed to the enemy
 		this.speed = randomValue(slowSpeed, fastSpeed);
 	}
@@ -105,7 +119,7 @@ Enemy.prototype.update = function(dt) {
 	this.x += (this.speed * dt);
 
 	//	check for a collision with the player; if so, execute the player's die() method
-	if (this.collisionWithThat(player)) {
+	if (this.collisionWithThat(player) && (player.moves > 0)) {
 		player.die();
 	}
 };
@@ -122,58 +136,70 @@ let Player = function() {
 	
 	this.state = "living";
 	
+	this.moves = 0;
+	
 	this.handleInput = function(key) {
 		
 		switch (key)
 		{
 			case 'left':
-				if (this.x >= this.width) {
-					this.x -= this.width;
+				if (this.xTile > 0) {
+					this.xTile--;
 				}
 				break;
 
 			case 'right':
-				if ((canvasWidth - this.x) > this.width) {
-					this.x += this.width;
+				if (this.xTile < (canvasTilesX - 1)) {
+					this.xTile++;
 				}
 				break;
 
 			case 'up':
-				if (this.y > (tileVisHeight - entityVerticalShift)) {
-					this.y -= tileVisHeight;
+				if (this.yTile > 1) {
+					this.yTile--;
 				}
 				break;
 
 			case 'down':
-				if (this.y < (((canvasTilesY - 1) * tileVisHeight) - entityVerticalShift))
-				{
-					this.y += tileVisHeight;
+				if (this.yTile < (canvasTilesY - 1)) {
+					this.yTile++;
 				}
 				break;
 
 			default:
 				break;
 		}
+		
+		this.x = this.xFROMxTile();
+		this.y = this.yFROMyTile();
+		this.moves++;
 	};
 
 	//	when player dies via collision with enemy, shift the player off the right
 	//	edge of the gameboard so that recalibrate() will reset it to the start position
 	this.die = function() {
-		this.x = canvasWidth * 2;
+		this.xTile = canvasTilesX * 2;
+		this.x = this.xFROMxTile();
+		this.state = "dead";
 		console.log("player killed");
 	};
 
 	this.update = function() {
 		//	if the player is offscreen, it's a signal to reset his position
 		//	to the starting tile
-		if (this.x > canvasWidth)
+		if (this.xTile > canvasTilesX)
 		{
 			//	starting x position is next-to-last horizontal tile
-			this.x = canvasWidth - (2 * this.width);
+			this.xTile = canvasTilesX - 2;
 			//	starting y position is centered over bottom tile
-			this.y = ((canvasTilesY - 1) * tileVisHeight) - entityVerticalShift;
+			this.yTile = canvasTilesY - 1;
+			
+			this.x = this.xFROMxTile();
+			this.y = this.yFROMyTile();
 			
 			this.state = "living";
+			
+			this.moves = 0;
 		}
 	};
 	
