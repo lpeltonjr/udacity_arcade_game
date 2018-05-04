@@ -232,4 +232,113 @@ document.addEventListener('keyup', function(e) {
     player.handleInput(allowedKeys[e.keyCode]);
 });
 
-//main();
+
+
+//	represents the information on the scoreboard
+function ScoreBoard() {
+	
+	this.moves = 0;
+	//	this is a reference to the "moves" counter in the HTML
+	this.movesElement = null;
+	
+	this.startTime = 0;
+	this.elapsedTime = 0;
+	this.timeString = "";
+	//	create a reference to the clock string in the HTML scoreboard section
+	this.timeElement = null;
+	
+	//	this is an unused handle to the interval timer which runs the clock; if we wanted to restart
+	//	the game without reloading, we would need this to destroy the timer before creating a new one
+	this.timeHandle;
+	
+	//	reference to the localStorage space of the browser -- future enhancement
+	//	this.persistentData = null;
+	
+	
+	//	this is called every 1 second from event handler "oneSecUpdate()"
+	this.clockUpdate = function () {
+
+		//	don't update the clock until necessary quantities have been initialized
+		if (this.timeElement !== null) {
+			//	obtain the number of milliseconds since the first move (click)
+			this.elapsedTime = new Date().getTime() - this.startTime;
+	
+			//	feed that into a date creator, which will give us some date in 1970 at time
+			//	00:00:00 -- we don't care about the calendar portion, just the clock portion
+			const tempDate = new Date();
+			tempDate.setTime(this.elapsedTime);
+	
+			//	use the built-in methods of the Date object to format the elapsed time for display
+			//	on the scoreboard, then update the clock display; note that UTC time must be requested
+			//	or the PC's time zone offset from 00:00:00 will be returned;
+			//	store it to a string first, so it can be used at the end on the "Game Over" page
+			this.timeString = tempDate.getUTCHours().toString().padStart(2, '0') + ':' + tempDate.getUTCMinutes().toString().padStart(2, '0') + ':' + tempDate.getUTCSeconds().toString().padStart(2, '0');
+			this.timeElement.textContent = this.timeString;
+		}
+	};
+	
+	//	this must be called on any game move to ensure the clock is running
+	this.startClock = function () {
+
+		if (this.timeElement === null) {
+			this.startTime = new Date().getTime();
+			this.timeElement = document.querySelector(".timeclock");
+		}
+	};
+
+	//	this method is called when a card is clicked; it increments the move counter
+	//	and then updates the star rating, if necessary
+	this.movesUpdate = function () {
+
+		if (this.movesElement !== null) {
+			//	increment the move count and its display
+			this.moves++;
+			this.movesElement.textContent = this.moves.toString();
+			//	call the method to start the clock on every move; it will only do something on the first move
+			this.startClock();
+		}
+	};
+
+	//	this will prevent any further updates to the displayed number of moves or the displayed time;
+	//	it severs connection to the HTML, so that the updates won't be attempted
+	this.freezeBoard = function () {
+		
+		this.timeElement = null;
+		this.movesElement = null;
+	};
+	
+	//	this will reset the clock display and prevent any updates until the first subsequent
+	//	move of the game; this is really only useful when the game can be restarted without reloading
+	//	the page, which I've decided not to support
+	this.initClock = function () {
+
+		if (this.timeElement !== null) {
+			this.timeElement.textContent = "00:00:00";
+			this.timeElement = null;
+		}
+	};
+	
+	
+	this.initScoreboard = function () {
+		
+		//	init the clock
+		this.initClock();
+		
+		//	init the move counter
+		this.moves = 0;
+		if (this.movesElement === null) {
+			this.movesElement = document.querySelector(".move-num");
+		}
+		this.movesElement.textContent = this.moves.toString();
+
+		//	init the reload button/icon
+		//	when the restart icon is clicked, the game will be restarted via function resetGame()
+		document.querySelector(".restart").addEventListener("click", resetGame);
+		
+//		to be added sometime in the future; out of time to add this right now
+/*		if (localStorageSupported() === true)
+		{
+			this.persistentData = window.localStorage;
+		}	*/
+	};
+}
