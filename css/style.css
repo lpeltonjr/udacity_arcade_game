@@ -33,6 +33,11 @@ body {
     flex-direction: column;
 }
 
+.instructions {
+	margin-top: 15px;
+	color: red;
+}
+
 .score-panel {
 	position: absolute;
 	top: 0%;
@@ -74,16 +79,15 @@ h1 {
     margin-bottom: 0px;
 }
 
-.timeclock,
 .move-count,
 .level-count,
-.final-time,
+.game-score,
 .final-count,
-.right-just {
-	font-size: 1.25em;
+.right-just,
+.instructions {
+	font: 10 1.25em 'Nanum Gothic Coding', monospace;
 }
 
-.score-panel .restart,
 .new-stats .final-restart {
 	cursor: pointer;
 }

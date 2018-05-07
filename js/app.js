@@ -119,7 +119,7 @@ Enemy.prototype.update = function(dt) {
 	this.x += (this.speed * dt);
 
 	//	check for a collision with the player; if so, execute the player's die() method
-	if (this.collisionWithThat(player) && (player.moves > 0)) {
+	if (this.collisionWithThat(player) && (player.movesSinceReset > 0)) {
 		player.die();
 	}
 };
@@ -130,13 +130,18 @@ Enemy.prototype.update = function(dt) {
 //	the Player class
 //***********************************************************************************
 //***********************************************************************************
+const SCORE_DELAY = 0.5;
 let Player = function() {
 
 	this.sprite = 'images/char-boy.png';
 	
-	this.state = "living";
+	this.movesSinceReset = 0;
 	
-	this.moves = 0;
+	//	delay counter (in seconds) between player movement and checking that move scores;
+	//	if we check immediately, the player never appears to make the move because
+	//	the update method spirits it back to the starting position before it is rendered
+	//	at the scoring position
+	this.scoreDelay;
 	
 	this.handleInput = function(key) {
 		
@@ -172,23 +177,45 @@ let Player = function() {
 		
 		this.x = this.xFROMxTile();
 		this.y = this.yFROMyTile();
-		this.moves++;
+
+		this.movesSinceReset++;
+		scoreboard.movesUpdate();
+		
+		this.scoreDelay = SCORE_DELAY;
 	};
 
 	//	when player dies via collision with enemy, shift the player off the right
 	//	edge of the gameboard so that recalibrate() will reset it to the start position
 	this.die = function() {
 		this.xTile = canvasTilesX * 2;
-		this.x = this.xFROMxTile();
-		this.state = "dead";
+		this.movesSinceReset = 0;
 		console.log("player killed");
 	};
+	
+	this.score = function() {
+		scoreboard.points += this.movesSinceReset;
+		this.movesSinceReset = 0;		
+		scoreboard.scoreUpdate();
+		this.xTile = canvasTilesX * 2;
+				
 
-	this.update = function() {
+	};
+
+	this.update = function(dt) {
+
+		if (this.scoreDelay > 0.0) {
+			this.scoreDelay -= dt;
+			if (this.scoreDelay <= 0.0)
+			{
+				if (this.yTile === 1) {
+					this.score();
+				}				
+			}
+		}
+	
 		//	if the player is offscreen, it's a signal to reset his position
 		//	to the starting tile
-		if (this.xTile > canvasTilesX)
-		{
+		if (this.xTile > canvasTilesX) {
 			//	starting x position is next-to-last horizontal tile
 			this.xTile = canvasTilesX - 2;
 			//	starting y position is centered over bottom tile
@@ -196,16 +223,94 @@ let Player = function() {
 			
 			this.x = this.xFROMxTile();
 			this.y = this.yFROMyTile();
-			
-			this.state = "living";
-			
-			this.moves = 0;
 		}
+
+
+
+		
 	};
 	
 };
 
 Player.prototype = Entity.prototype;
+
+//***********************************************************************************
+//***********************************************************************************
+//	the Scoreboard class
+//***********************************************************************************
+//***********************************************************************************
+const levelString = [
+	"Reach the water without encountering an enemy!",
+	"Touch the gem without encountering an enemy!",
+	"Touch each gem without encountering an enemy!"
+];
+
+//	represents the information on the scoreboard
+function Scoreboard() {
+	
+	this.moves = -1;
+	//	this is a reference to the "moves" counter in the HTML
+	this.movesElement = null;
+	
+	this.points = 0;
+	//	this is a reference to the "points" counter in the HTML
+	this.pointsElement = null;
+	
+	this.gameLevel = 0;
+	this.levelElement = null;
+	
+	//	this method is called whenever the player is moved
+	this.movesUpdate = function () {
+
+		if (this.movesElement !== null) {
+			this.moves++;
+			this.movesElement.textContent = this.moves.toString();
+		}
+	};
+	
+	//	this method is called when the player has scored
+	this.scoreUpdate = function() {
+		
+		if (this.pointsElement !== null) {
+			this.pointsElement.textContent = this.points.toString();
+		}
+	};
+	
+	//	this method is called to change the displayed gameLevel
+	this.levelUpdate = function() {
+		if (this.levelElement !== null) {
+			this.levelElement.textContent = this.gameLevel.toString();
+		}
+		//	also provide contextual instructions at the bottom of the window
+		document.querySelector(".instructions").textContent = levelString[this.gameLevel];
+	};
+
+	//	this will prevent any further updates to the displayed number of moves or the displayed time;
+	//	it severs connection to the HTML, so that the updates won't be attempted
+	this.freezeBoard = function () {
+		
+		this.movesElement = null;
+	};
+	
+	
+	this.initScoreboard = function () {
+		
+		if (this.movesElement === null) {
+			this.movesElement = document.querySelector(".move-num");
+		}
+		this.movesUpdate();
+		
+		if (this.pointsElement === null) {
+			this.pointsElement = document.querySelector(".score-num");
+		}
+		
+		if (this.levelElement === null) {
+			this.levelElement = document.querySelector(".level-num");
+		}
+		this.levelUpdate();
+	};
+}
+
 
 // Now instantiate your objects.
 // Place all enemy objects in an array called allEnemies
@@ -216,7 +321,10 @@ for (let i = 0; i < enemyCount; i++)
 	allEnemies.push(new Enemy());
 }
 
-player = new Player();
+let player = new Player();
+
+let scoreboard = new Scoreboard();
+scoreboard.initScoreboard();
 
 
 // This listens for key presses and sends the keys to your
@@ -234,111 +342,3 @@ document.addEventListener('keyup', function(e) {
 
 
 
-//	represents the information on the scoreboard
-function ScoreBoard() {
-	
-	this.moves = 0;
-	//	this is a reference to the "moves" counter in the HTML
-	this.movesElement = null;
-	
-	this.startTime = 0;
-	this.elapsedTime = 0;
-	this.timeString = "";
-	//	create a reference to the clock string in the HTML scoreboard section
-	this.timeElement = null;
-	
-	//	this is an unused handle to the interval timer which runs the clock; if we wanted to restart
-	//	the game without reloading, we would need this to destroy the timer before creating a new one
-	this.timeHandle;
-	
-	//	reference to the localStorage space of the browser -- future enhancement
-	//	this.persistentData = null;
-	
-	
-	//	this is called every 1 second from event handler "oneSecUpdate()"
-	this.clockUpdate = function () {
-
-		//	don't update the clock until necessary quantities have been initialized
-		if (this.timeElement !== null) {
-			//	obtain the number of milliseconds since the first move (click)
-			this.elapsedTime = new Date().getTime() - this.startTime;
-	
-			//	feed that into a date creator, which will give us some date in 1970 at time
-			//	00:00:00 -- we don't care about the calendar portion, just the clock portion
-			const tempDate = new Date();
-			tempDate.setTime(this.elapsedTime);
-	
-			//	use the built-in methods of the Date object to format the elapsed time for display
-			//	on the scoreboard, then update the clock display; note that UTC time must be requested
-			//	or the PC's time zone offset from 00:00:00 will be returned;
-			//	store it to a string first, so it can be used at the end on the "Game Over" page
-			this.timeString = tempDate.getUTCHours().toString().padStart(2, '0') + ':' + tempDate.getUTCMinutes().toString().padStart(2, '0') + ':' + tempDate.getUTCSeconds().toString().padStart(2, '0');
-			this.timeElement.textContent = this.timeString;
-		}
-	};
-	
-	//	this must be called on any game move to ensure the clock is running
-	this.startClock = function () {
-
-		if (this.timeElement === null) {
-			this.startTime = new Date().getTime();
-			this.timeElement = document.querySelector(".timeclock");
-		}
-	};
-
-	//	this method is called when a card is clicked; it increments the move counter
-	//	and then updates the star rating, if necessary
-	this.movesUpdate = function () {
-
-		if (this.movesElement !== null) {
-			//	increment the move count and its display
-			this.moves++;
-			this.movesElement.textContent = this.moves.toString();
-			//	call the method to start the clock on every move; it will only do something on the first move
-			this.startClock();
-		}
-	};
-
-	//	this will prevent any further updates to the displayed number of moves or the displayed time;
-	//	it severs connection to the HTML, so that the updates won't be attempted
-	this.freezeBoard = function () {
-		
-		this.timeElement = null;
-		this.movesElement = null;
-	};
-	
-	//	this will reset the clock display and prevent any updates until the first subsequent
-	//	move of the game; this is really only useful when the game can be restarted without reloading
-	//	the page, which I've decided not to support
-	this.initClock = function () {
-
-		if (this.timeElement !== null) {
-			this.timeElement.textContent = "00:00:00";
-			this.timeElement = null;
-		}
-	};
-	
-	
-	this.initScoreboard = function () {
-		
-		//	init the clock
-		this.initClock();
-		
-		//	init the move counter
-		this.moves = 0;
-		if (this.movesElement === null) {
-			this.movesElement = document.querySelector(".move-num");
-		}
-		this.movesElement.textContent = this.moves.toString();
-
-		//	init the reload button/icon
-		//	when the restart icon is clicked, the game will be restarted via function resetGame()
-		document.querySelector(".restart").addEventListener("click", resetGame);
-		
-//		to be added sometime in the future; out of time to add this right now
-/*		if (localStorageSupported() === true)
-		{
-			this.persistentData = window.localStorage;
-		}	*/
-	};
-}
