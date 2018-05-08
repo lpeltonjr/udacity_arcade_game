@@ -111,16 +111,19 @@ Enemy.prototype.recalibrate = function() {
 // Parameter: dt, a time delta between ticks -- IN SECONDS !!!!
 Enemy.prototype.update = function(dt) {
 
-	//	keep recalibrating properties of enemies that advance past the right
-	//	edge of the gameboard
-	this.recalibrate();
+	if (scoreboard.pause === 0)
+	{
+		//	keep recalibrating properties of enemies that advance past the right
+		//	edge of the gameboard
+		this.recalibrate();
 	
-	//	calculate the new position: pixels = pixels/sec * elapsed seconds
-	this.x += (this.speed * dt);
+		//	calculate the new position: pixels = pixels/sec * elapsed seconds
+		this.x += (this.speed * dt);
 
-	//	check for a collision with the player; if so, execute the player's die() method
-	if (this.collisionWithThat(player) && (player.movesSinceReset > 0)) {
-		player.die();
+		//	check for a collision with the player; if so, execute the player's die() method
+		if (this.collisionWithThat(player) && (player.movesSinceReset > 0)) {
+			player.die();
+		}
 	}
 };
 
@@ -131,98 +134,146 @@ Enemy.prototype.update = function(dt) {
 //***********************************************************************************
 //***********************************************************************************
 const SCORE_DELAY = 0.5;
+const PLAY = 0;
+const REST = 1;
+const DEAD = 2;
+
 let Player = function() {
 
 	this.sprite = 'images/char-boy.png';
 	
+	this.state = PLAY;
+		
 	this.movesSinceReset = 0;
 	
 	//	delay counter (in seconds) between player movement and checking that move scores;
 	//	if we check immediately, the player never appears to make the move because
 	//	the update method spirits it back to the starting position before it is rendered
 	//	at the scoring position
-	this.scoreDelay;
+	this.decayTimer;
+
 	
 	this.handleInput = function(key) {
 		
-		switch (key)
+		if (this.state === PLAY)
 		{
-			case 'left':
-				if (this.xTile > 0) {
-					this.xTile--;
-				}
-				break;
+			switch (key)
+			{
+				case 'left':
+					if (this.xTile > 0) {
+						this.xTile--;
+					}
+					break;
 
-			case 'right':
-				if (this.xTile < (canvasTilesX - 1)) {
-					this.xTile++;
-				}
-				break;
+				case 'right':
+					if (this.xTile < (canvasTilesX - 1)) {
+						this.xTile++;
+					}
+					break;
 
-			case 'up':
-				if (this.yTile > 1) {
-					this.yTile--;
-				}
-				break;
+				case 'up':
+					if (this.yTile > 1) {
+						this.yTile--;
+					}
+					break;
 
-			case 'down':
-				if (this.yTile < (canvasTilesY - 1)) {
-					this.yTile++;
-				}
-				break;
+				case 'down':
+					if (this.yTile < (canvasTilesY - 1)) {
+						this.yTile++;
+					}
+					break;
 
-			default:
-				break;
+				default:
+					break;
+			}
+		
+			this.x = this.xFROMxTile();
+			this.y = this.yFROMyTile();
+
+			this.movesSinceReset++;
+			scoreboard.movesUpdate();
+		
+			this.decayTimer = SCORE_DELAY;
 		}
-		
-		this.x = this.xFROMxTile();
-		this.y = this.yFROMyTile();
-
-		this.movesSinceReset++;
-		scoreboard.movesUpdate();
-		
-		this.scoreDelay = SCORE_DELAY;
 	};
 
 	//	when player dies via collision with enemy, shift the player off the right
 	//	edge of the gameboard so that recalibrate() will reset it to the start position
 	this.die = function() {
-		this.xTile = canvasTilesX * 2;
-		this.movesSinceReset = 0;
-		console.log("player killed");
+		if (this.state === PLAY)
+		{
+			this.xTile = canvasTilesX * 2;
+			this.movesSinceReset = 0;
+			console.log("player killed");
+		}
 	};
 	
 	this.score = function() {
-		scoreboard.points += this.movesSinceReset;
-		this.movesSinceReset = 0;		
-		scoreboard.scoreUpdate();
-		this.xTile = canvasTilesX * 2;
-				
 
+		if (this.state === PLAY) {
+			
+			scoreboard.points += (this.movesSinceReset * (scoreboard.gameLevel + 1));
+			this.movesSinceReset = 0;		
+			scoreboard.scoreUpdate();
+
+ 			this.sprite = 'images/Star.png';
+			this.state = REST;
+			this.decayTimer = SCORE_DELAY;			
+		}
+	};
+	
+	this.timerExpired = function(dt) {
+
+		if (this.decayTimer > 0.0) {
+			this.decayTimer -= dt;
+			if (this.decayTimer <= 0.0)
+			{
+				return true;
+			}
+		}
+		return false;
 	};
 
 	this.update = function(dt) {
 
-		if (this.scoreDelay > 0.0) {
-			this.scoreDelay -= dt;
-			if (this.scoreDelay <= 0.0)
-			{
-				if (this.yTile === 1) {
-					this.score();
-				}				
-			}
-		}
-	
-		//	if the player is offscreen, it's a signal to reset his position
-		//	to the starting tile
-		if (this.xTile > canvasTilesX) {
-			//	starting x position is next-to-last horizontal tile
-			this.xTile = canvasTilesX - 2;
-			//	starting y position is centered over bottom tile
-			this.yTile = canvasTilesY - 1;
+		if (this.state === PLAY) {
 			
-			this.x = this.xFROMxTile();
-			this.y = this.yFROMyTile();
+			if (this.timerExpired(dt) === true)
+			{
+				if (this.yTile === 1) this.score();
+			}
+
+			//	if the player is offscreen, it's a signal to reset his position
+			//	to the starting tile
+			if (this.xTile > canvasTilesX) {
+				//	starting x position is next-to-last horizontal tile
+				this.xTile = canvasTilesX - 2;
+				//	starting y position is centered over bottom tile
+				this.yTile = canvasTilesY - 1;
+			
+				this.x = this.xFROMxTile();
+				this.y = this.yFROMyTile();
+				scoreboard.pause = 0;
+			}
+			
+		} else {
+
+			if (this.state === REST) {
+				
+				this.yTile = canvasTilesY - 1;
+				if (this.y >= this.yFROMyTile()) {
+					
+					this.state = PLAY;
+					this.sprite = 'images/char-boy.png';
+					
+				} else {
+				
+					if ((this.decayTimer <= 0.0) || (this.timerExpired(dt) === true)) {
+						this.y += (fastSpeed * dt);
+					
+					}
+				}
+			}
 		}
 
 
@@ -258,6 +309,8 @@ function Scoreboard() {
 	
 	this.gameLevel = 0;
 	this.levelElement = null;
+
+	this.pause = 0;
 	
 	//	this method is called whenever the player is moved
 	this.movesUpdate = function () {
@@ -274,6 +327,7 @@ function Scoreboard() {
 		if (this.pointsElement !== null) {
 			this.pointsElement.textContent = this.points.toString();
 		}
+//		scoreboard.pause = 1;
 	};
 	
 	//	this method is called to change the displayed gameLevel
