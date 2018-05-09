@@ -111,8 +111,7 @@ Enemy.prototype.recalibrate = function() {
 // Parameter: dt, a time delta between ticks -- IN SECONDS !!!!
 Enemy.prototype.update = function(dt) {
 
-	if (scoreboard.pause === 0)
-	{
+	if (scoreboard.pause === 0)	{
 		//	keep recalibrating properties of enemies that advance past the right
 		//	edge of the gameboard
 		this.recalibrate();
@@ -120,7 +119,8 @@ Enemy.prototype.update = function(dt) {
 		//	calculate the new position: pixels = pixels/sec * elapsed seconds
 		this.x += (this.speed * dt);
 
-		//	check for a collision with the player; if so, execute the player's die() method
+		//	check for a collision with the player; if so, execute the player's die() method;
+		//	we don't allow the player to die on the starting tile unless moves have occurred
 		if (this.collisionWithThat(player) && (player.movesSinceReset > 0)) {
 			player.die();
 		}
@@ -144,19 +144,24 @@ let Player = function() {
 	
 	this.state = PLAY;
 		
+	//	when the player reaches a scoring position, a multiple of this quantity
+	//	is added to the score; this rewards the user for keeping the player alive
+	//	over greater numbers of moves
 	this.movesSinceReset = 0;
 	
-	//	delay counter (in seconds) between player movement and checking that move scores;
-	//	if we check immediately, the player never appears to make the move because
-	//	the update method spirits it back to the starting position before it is rendered
-	//	at the scoring position
+	//	this timer is refreshed whenever the player moves; it is used to delay resultant
+	//	actions (scoring, etc.)
 	this.decayTimer;
 
-	
+	//	this is the callback for processing keyboard events
 	this.handleInput = function(key) {
 		
-		if (this.state === PLAY)
-		{
+		let prevXtile = this.xTile;
+		let prevYtile = this.yTile;
+
+		//	ignore keyboard events unless the player is actually in play
+		if (this.state === PLAY) {
+			
 			switch (key)
 			{
 				case 'left':
@@ -172,6 +177,7 @@ let Player = function() {
 					break;
 
 				case 'up':
+					//	move up, but not into the water tiles
 					if (this.yTile > 1) {
 						this.yTile--;
 					}
@@ -187,12 +193,18 @@ let Player = function() {
 					break;
 			}
 		
+			//	unlike the enemies, the player moves by tiles; translate the tile movement
+			//	into pixel movement, which is what the update/render methods require
 			this.x = this.xFROMxTile();
 			this.y = this.yFROMyTile();
 
-			this.movesSinceReset++;
-			scoreboard.movesUpdate();
+			//	if movement occurred, update the movement counter
+			if ((prevXtile !== this.xTile) || (prevYtile !== this.yTile)) {
+				scoreboard.movesUpdate(++this.movesSinceReset);
+			}
 		
+			//	refresh the decayTimer; it may or may not cause something to happen when it
+			//	expires; depends on game state
 			this.decayTimer = SCORE_DELAY;
 		}
 	};
@@ -200,28 +212,41 @@ let Player = function() {
 	//	when player dies via collision with enemy, shift the player off the right
 	//	edge of the gameboard so that recalibrate() will reset it to the start position
 	this.die = function() {
+		
 		if (this.state === PLAY)
 		{
 			this.xTile = canvasTilesX * 2;
 			this.movesSinceReset = 0;
-			console.log("player killed");
+			scoreboard.movesUpdate(this.movesSinceReset);
 		}
 	};
 	
+	//	this method is called when the player reaches a scoring position
 	this.score = function() {
 
 		if (this.state === PLAY) {
 			
+			//	point quantity awarded at a scoring position depends on the game level; higher
+			//	levels garner more points per score
 			scoreboard.points += (this.movesSinceReset * (scoreboard.gameLevel + 1));
-			this.movesSinceReset = 0;		
 			scoreboard.scoreUpdate();
+			
+			//	the move counter is reset following a score; moves will next be tallied
+			//	for the next scoring event
+			this.movesSinceReset = 0;
+			scoreboard.movesUpdate(this.movesSinceReset);
 
+			//	the player becomes a star to indicate scoring
  			this.sprite = 'images/Star.png';
-			this.state = REST;
-			this.decayTimer = SCORE_DELAY;			
+// 			this.sprite = 'images/Selector.png';
+			this.decayTimer = SCORE_DELAY;
+
+			//	this prevents scoring twice or more on the same tile; it also halts player movement
+			this.state = REST;			
 		}
 	};
 	
+	//	the decayTimer processing method; true if timer has just now expired; false otherwise
 	this.timerExpired = function(dt) {
 
 		if (this.decayTimer > 0.0) {
@@ -234,17 +259,24 @@ let Player = function() {
 		return false;
 	};
 
+
 	this.update = function(dt) {
 
+		//	player updates during PLAY state
 		if (this.state === PLAY) {
 			
+			//	if the player has been located on a scoring tile for the decayTimer duration
+			//	(long enough to be rendered on the tile), score
 			if (this.timerExpired(dt) === true)
 			{
+				//	this must be game-level specific
+				//	if player is on a top tile, just below the water, they are all scoring
+				//	tiles in level 1
 				if (this.yTile === 1) this.score();
 			}
 
 			//	if the player is offscreen, it's a signal to reset his position
-			//	to the starting tile
+			//	to the starting tile; this only happens when the player is killed by an enemy
 			if (this.xTile > canvasTilesX) {
 				//	starting x position is next-to-last horizontal tile
 				this.xTile = canvasTilesX - 2;
@@ -253,34 +285,36 @@ let Player = function() {
 			
 				this.x = this.xFROMxTile();
 				this.y = this.yFROMyTile();
-				scoreboard.pause = 0;
 			}
 			
+		//	player updates during REST state
 		} else {
 
+			//	if the player is in the state REST, following a score ...
 			if (this.state === REST) {
-				
+
+				//	the star will be returned to the starting row without changing the column;
+				//	set yTile to the final position for use in comparison
 				this.yTile = canvasTilesY - 1;
+				//	if the star has returned to the starting row, swap back to the player sprite
+				//	and resume play
 				if (this.y >= this.yFROMyTile()) {
 					
 					this.state = PLAY;
 					this.sprite = 'images/char-boy.png';
 					
+				//	otherwise the star/player is being lowered to the starting row;
 				} else {
 				
+					//	whether the decayTimer just expired or has been expired for a while,
+					//	lower the player to the starting row
 					if ((this.decayTimer <= 0.0) || (this.timerExpired(dt) === true)) {
 						this.y += (fastSpeed * dt);
-					
 					}
 				}
 			}
 		}
-
-
-
-		
 	};
-	
 };
 
 Player.prototype = Entity.prototype;
@@ -290,6 +324,7 @@ Player.prototype = Entity.prototype;
 //	the Scoreboard class
 //***********************************************************************************
 //***********************************************************************************
+//	instructions displayed beneath gameboard for each level
 const levelString = [
 	"Reach the water without encountering an enemy!",
 	"Touch the gem without encountering an enemy!",
@@ -299,7 +334,6 @@ const levelString = [
 //	represents the information on the scoreboard
 function Scoreboard() {
 	
-	this.moves = -1;
 	//	this is a reference to the "moves" counter in the HTML
 	this.movesElement = null;
 	
@@ -310,14 +344,15 @@ function Scoreboard() {
 	this.gameLevel = 0;
 	this.levelElement = null;
 
+	//	this property may be used to pause game play
 	this.pause = 0;
 	
 	//	this method is called whenever the player is moved
-	this.movesUpdate = function () {
+	this.movesUpdate = function(moves) {
 
 		if (this.movesElement !== null) {
-			this.moves++;
-			this.movesElement.textContent = this.moves.toString();
+
+			this.movesElement.textContent = moves.toString();
 		}
 	};
 	
@@ -327,7 +362,6 @@ function Scoreboard() {
 		if (this.pointsElement !== null) {
 			this.pointsElement.textContent = this.points.toString();
 		}
-//		scoreboard.pause = 1;
 	};
 	
 	//	this method is called to change the displayed gameLevel
@@ -339,24 +373,18 @@ function Scoreboard() {
 		document.querySelector(".instructions").textContent = levelString[this.gameLevel];
 	};
 
-	//	this will prevent any further updates to the displayed number of moves or the displayed time;
-	//	it severs connection to the HTML, so that the updates won't be attempted
-	this.freezeBoard = function () {
-		
-		this.movesElement = null;
-	};
-	
 	
 	this.initScoreboard = function () {
 		
 		if (this.movesElement === null) {
 			this.movesElement = document.querySelector(".move-num");
 		}
-		this.movesUpdate();
+		this.movesUpdate(0);
 		
 		if (this.pointsElement === null) {
 			this.pointsElement = document.querySelector(".score-num");
 		}
+		this.scoreUpdate();
 		
 		if (this.levelElement === null) {
 			this.levelElement = document.querySelector(".level-num");
@@ -377,6 +405,7 @@ for (let i = 0; i < enemyCount; i++)
 
 let player = new Player();
 
+//	create and initialize the scoreboard
 let scoreboard = new Scoreboard();
 scoreboard.initScoreboard();
 

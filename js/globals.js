@@ -35,7 +35,7 @@ const fastSpeed = slowSpeed * 3;
 
 //	this isn't specified in the project rubric, so I've just picked a number; in a multi-level game
 //	it should be less on easier levels and more on higher levels
-const enemyCount = 4;
+const enemyCount = 3;
 //	*****************************************************************************
 //	*****************************************************************************
 //	NOTE also that I'm not changing the var declarations in received files to 'const' or
