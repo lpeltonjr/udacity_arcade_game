@@ -238,7 +238,6 @@ let Player = function() {
 
 			//	the player becomes a star to indicate scoring
  			this.sprite = 'images/Star.png';
-// 			this.sprite = 'images/Selector.png';
 			this.decayTimer = SCORE_DELAY;
 
 			//	this prevents scoring twice or more on the same tile; it also halts player movement
@@ -302,6 +301,9 @@ let Player = function() {
 					
 					this.state = PLAY;
 					this.sprite = 'images/char-boy.png';
+					//	see whether the game level should be advanced and do it, if required
+					scoreboard.levelAdvance();
+					
 					
 				//	otherwise the star/player is being lowered to the starting row;
 				} else {
@@ -318,6 +320,19 @@ let Player = function() {
 };
 
 Player.prototype = Entity.prototype;
+
+//***********************************************************************************
+//***********************************************************************************
+//	the Trinket class
+//***********************************************************************************
+//***********************************************************************************
+function Trinket() {
+	this.sprite = "";
+}
+
+Trinket.prototype = Entity.prototype;
+
+let allTrinkets = [];
 
 //***********************************************************************************
 //***********************************************************************************
@@ -343,7 +358,7 @@ function Scoreboard() {
 	
 	this.gameLevel = 0;
 	this.levelElement = null;
-
+	
 	//	this property may be used to pause game play
 	this.pause = 0;
 	
@@ -371,6 +386,36 @@ function Scoreboard() {
 		}
 		//	also provide contextual instructions at the bottom of the window
 		document.querySelector(".instructions").textContent = levelString[this.gameLevel];
+	};
+	
+	this.levelAdvance = function() {
+
+		let idx = 0;
+
+		//	when a point threshold for a particular game level is reached, advance the game
+		//	to the next level
+		if (this.points >= levelPtThresh[this.gameLevel]) {
+			//	each level is harder: an additional enemy is added
+			allEnemies.push(new Enemy());
+			
+			//	the number of trinkets on the gameboard corresponds to the game level
+			allTrinkets.push(new Trinket());
+			//	set the gamepiece for the new trinket
+			allTrinkets[allTrinkets.length - 1].sprite = levelTrinkets[(this.gameLevel + 1)];
+			//	reposition as many trinkets as are on the board -- each must be located on the
+			//	top row beneath the water, yTile === 1; there is no point in randomizing the xTile
+			//	assignment, since there are only 5 columns
+			allTrinkets.forEach(function(trinket) {
+				trinket.yTile = 1;
+				trinket.y = trinket.yFROMyTile();
+				trinket.xTile = idx;
+				trinket.x = trinket.xFROMxTile();
+				idx += 2;
+			});
+			
+			this.gameLevel++;
+			this.levelUpdate();
+		}
 	};
 
 	

@@ -36,6 +36,20 @@ const fastSpeed = slowSpeed * 3;
 //	this isn't specified in the project rubric, so I've just picked a number; in a multi-level game
 //	it should be less on easier levels and more on higher levels
 const enemyCount = 3;
+
+//	at 16 points achieved in level 0, advance to level 1;
+//	at 48 points achieved in level 1, advance to level 2;
+//	at 96 points achieved in level 2, advance to level 3;
+//	set an outrageous number to prevent advancing beyond level 3
+const levelPtThresh = [16, 48, 96, 10000];
+
+const levelTrinkets = [
+	"",
+	"images/Gem Blue.png",
+	"images/Gem Green.png",
+	"images/Gem Orange.png",
+	""
+];
 //	*****************************************************************************
 //	*****************************************************************************
 //	NOTE also that I'm not changing the var declarations in received files to 'const' or
