@@ -48,20 +48,9 @@ Entity.prototype.render = function() {
 //	this entity has collided with it
 Entity.prototype.collisionWithThat = function(that) {
 	
-	let intersectX;
-	let intersectY;
-
 	//	collisions require identical y values
 	if (this.y === that.y) {
-		//	if this entity is ahead of that entity ...
-		if (this.x > that.x) {
-			intersectX = that.x + that.width - this.x;
-		} else {
-			intersectX = this.x + this.width - that.x;
-		}
-	
-		//	collision will occur at the center of a tile, not at the left corner
-		if ((intersectX > (this.width / 2)) && (intersectX <= this.width)) {
+		if (Math.abs(this.x - that.x) < (this.width / 2)) {
 			return true;
 		}
 	}
@@ -98,8 +87,10 @@ Enemy.prototype.recalibrate = function() {
 		this.x = this.xFROMxTile() * -1;
 		
 		//	reposition the enemy on a random vertical tile, but not in the water
-		//	(thus the lower limit is 1, not 0)
-		this.yTile = randomValue(1, canvasTilesY);
+		//	(thus the lower limit is 1, not 0) and not on the last row, if the player
+		//	was just reset and hasn't been moved yet (don't kill the player before he's
+		//	had a chance to move)
+		this.yTile = randomValue(1, (canvasTilesY - 2));
 		this.y = this.yFROMyTile();
 		
 		//	assign a new speed to the enemy
@@ -121,7 +112,7 @@ Enemy.prototype.update = function(dt) {
 
 		//	check for a collision with the player; if so, execute the player's die() method;
 		//	we don't allow the player to die on the starting tile unless moves have occurred
-		if (this.collisionWithThat(player) && (player.movesSinceReset > 0)) {
+		if (this.collisionWithThat(player)) {
 			player.die();
 		}
 	}
@@ -137,6 +128,9 @@ const SCORE_DELAY = 0.5;
 const PLAY = 0;
 const REST = 1;
 const DEAD = 2;
+
+const playerStartX = canvasTilesX - 2;
+const playerStartY = canvasTilesY - 1;
 
 let Player = function() {
 
@@ -268,19 +262,37 @@ let Player = function() {
 			//	(long enough to be rendered on the tile), score
 			if (this.timerExpired(dt) === true)
 			{
-				//	this must be game-level specific
-				//	if player is on a top tile, just below the water, they are all scoring
-				//	tiles in level 1
-				if (this.yTile === 1) this.score();
+				//	if player is on a top tile, just below the water
+				if (this.yTile === 1)
+				{
+					//	all top tiles are scoring tiles in level 0
+					if (scoreboard.gameLevel === 0) {
+						this.score();
+
+					//	in other levels, the scoring tiles are those containing trinkets
+					} else {
+
+						allTrinkets.forEach(function(trinket) {
+							//	if the player occupies same tile as a trinket ...
+							if (trinket.xTile === this.xTile) {
+								//	score and begin score animation
+								this.score();
+								//	trinket is temporarily removed from gameboard
+								trinket.xTile = 2 * canvasTilesX;
+								trinket.x = trinket.xFROMxTile();
+							}
+						}, this);
+					}
+				}
 			}
 
 			//	if the player is offscreen, it's a signal to reset his position
 			//	to the starting tile; this only happens when the player is killed by an enemy
 			if (this.xTile > canvasTilesX) {
 				//	starting x position is next-to-last horizontal tile
-				this.xTile = canvasTilesX - 2;
+				this.xTile = playerStartX;
 				//	starting y position is centered over bottom tile
-				this.yTile = canvasTilesY - 1;
+				this.yTile = playerStartY;
 			
 				this.x = this.xFROMxTile();
 				this.y = this.yFROMyTile();
@@ -292,26 +304,37 @@ let Player = function() {
 			//	if the player is in the state REST, following a score ...
 			if (this.state === REST) {
 
-				//	the star will be returned to the starting row without changing the column;
-				//	set yTile to the final position for use in comparison
-				this.yTile = canvasTilesY - 1;
+				//	the star will be returned to the starting row and column
+				//	set yTile and xTile to the final positions for use in comparison
+				this.yTile = playerStartY;
+				this.xTile = playerStartX;
 				//	if the star has returned to the starting row, swap back to the player sprite
 				//	and resume play
 				if (this.y >= this.yFROMyTile()) {
-					
+					//	ensure starting x position is correct in case it wasn't corrected
+					//	before y position was corrected
+					this.x = this.xFROMxTile();
 					this.state = PLAY;
 					this.sprite = 'images/char-boy.png';
 					//	see whether the game level should be advanced and do it, if required
 					scoreboard.levelAdvance();
 					
 					
-				//	otherwise the star/player is being lowered to the starting row;
+				//	otherwise the star/player's position is to be corrected to the starting position
 				} else {
 				
 					//	whether the decayTimer just expired or has been expired for a while,
-					//	lower the player to the starting row
+					//	lower the player to the starting row,column
 					if ((this.decayTimer <= 0.0) || (this.timerExpired(dt) === true)) {
-						this.y += (fastSpeed * dt);
+						let fs = fastSpeed * dt;
+						//	y correction
+						this.y += fs;
+						//	x correction
+						let xDelta = this.x - this.xFROMxTile();
+						if (Math.abs(xDelta) > fs) {
+							if (xDelta > 0) this.x -= fs;
+							else if (xDelta < 0) this.x += fs;
+						}
 					}
 				}
 			}
@@ -339,12 +362,6 @@ let allTrinkets = [];
 //	the Scoreboard class
 //***********************************************************************************
 //***********************************************************************************
-//	instructions displayed beneath gameboard for each level
-const levelString = [
-	"Reach the water without encountering an enemy!",
-	"Touch the gem without encountering an enemy!",
-	"Touch each gem without encountering an enemy!"
-];
 
 //	represents the information on the scoreboard
 function Scoreboard() {
@@ -385,7 +402,7 @@ function Scoreboard() {
 			this.levelElement.textContent = this.gameLevel.toString();
 		}
 		//	also provide contextual instructions at the bottom of the window
-		document.querySelector(".instructions").textContent = levelString[this.gameLevel];
+		document.querySelector(".instructions").textContent = levelData[this.gameLevel].instruction;
 	};
 	
 	this.levelAdvance = function() {
@@ -394,14 +411,18 @@ function Scoreboard() {
 
 		//	when a point threshold for a particular game level is reached, advance the game
 		//	to the next level
-		if (this.points >= levelPtThresh[this.gameLevel]) {
+		if (this.points >= levelData[this.gameLevel].pointThresh) {
+
+			this.gameLevel++;
+			
 			//	each level is harder: an additional enemy is added
 			allEnemies.push(new Enemy());
 			
 			//	the number of trinkets on the gameboard corresponds to the game level
 			allTrinkets.push(new Trinket());
+						
 			//	set the gamepiece for the new trinket
-			allTrinkets[allTrinkets.length - 1].sprite = levelTrinkets[(this.gameLevel + 1)];
+			allTrinkets[allTrinkets.length - 1].sprite = levelData[this.gameLevel].addedTrinket;
 			//	reposition as many trinkets as are on the board -- each must be located on the
 			//	top row beneath the water, yTile === 1; there is no point in randomizing the xTile
 			//	assignment, since there are only 5 columns
@@ -413,7 +434,7 @@ function Scoreboard() {
 				idx += 2;
 			});
 			
-			this.gameLevel++;
+			
 			this.levelUpdate();
 		}
 	};

@@ -37,19 +37,39 @@ const fastSpeed = slowSpeed * 3;
 //	it should be less on easier levels and more on higher levels
 const enemyCount = 3;
 
-//	at 16 points achieved in level 0, advance to level 1;
-//	at 48 points achieved in level 1, advance to level 2;
-//	at 96 points achieved in level 2, advance to level 3;
-//	set an outrageous number to prevent advancing beyond level 3
-const levelPtThresh = [16, 48, 96, 10000];
+//	array of objects defining game characteristics per game level;
+//	pointThresh:	when the points exceed this value, the level will be incremented
+//	addedTrinket:	these are placed on the top row; player must reach them to score
+//	instruction:	displayed beneath the gameboard
+const levelData = [
 
-const levelTrinkets = [
-	"",
-	"images/Gem Blue.png",
-	"images/Gem Green.png",
-	"images/Gem Orange.png",
-	""
+	//	level 0 characteristics
+//	{	"pointThresh"	:	16,
+	{	"pointThresh"	:	4,
+		"addedTrinket"	:	null,
+		"instruction"	:	"Reach the water, avoiding enemy collisions!"
+	},
+	
+	//	level 1 characteristics
+	{	"pointThresh"	:	48,
+		"addedTrinket"	:	"images/Gem Blue.png",
+		"instruction"	:	"Reach 1 gem, avoiding enemy collisions!"
+	},
+	
+	//	level 2 characteristics
+	{	"pointThresh"	:	96,
+		"addedTrinket"	:	"images/Gem Green.png",
+		"instruction"	:	"Reach 2 gems, avoiding enemy collisions!"
+	},
+	
+	//	level 3 characteristics
+	{	"pointThresh"	:	10000,
+		"addedTrinket"	:	"images/Gem Orange.png",
+		"instruction"	:	"Reach 3 gems, avoiding enemy collisions!"
+	}
 ];
+
+
 //	*****************************************************************************
 //	*****************************************************************************
 //	NOTE also that I'm not changing the var declarations in received files to 'const' or
