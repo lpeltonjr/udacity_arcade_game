@@ -1,3 +1,4 @@
+//	global helper for calculating random values without repeating the formula over and over
 function randomValue(lowerLimit, upperLimit) {
 	return (Math.floor(Math.random() * (upperLimit - lowerLimit)) + lowerLimit);
 }
@@ -5,7 +6,7 @@ function randomValue(lowerLimit, upperLimit) {
 
 //***********************************************************************************
 //***********************************************************************************
-//	the Entity class -- used only to establish inheritance
+//	the Entity class -- used to establish inheritance
 //***********************************************************************************
 //***********************************************************************************
 //	base class in entity prototype chain
@@ -48,7 +49,7 @@ Entity.prototype.render = function() {
 //	this entity has collided with it
 Entity.prototype.collisionWithThat = function(that) {
 	
-	//	collisions require identical y values
+	//	collisions require identical y values and overlap of at least half the image element width
 	if (this.y === that.y) {
 		if (Math.abs(this.x - that.x) < (this.width / 2)) {
 			return true;
@@ -80,6 +81,7 @@ Enemy.prototype = Entity.prototype;
 //	this handles enemy movement: x and y positions, as well as speed,
 //	are recalibrated after an enemy passes beyond right border of the gameboard;
 Enemy.prototype.recalibrate = function() {
+	
 	if (this.x > canvasWidth) {
 		//	start the enemy somewhere off the left side of the board such that it is
 		//	offset from other enemies moved off the left side of the board
@@ -87,9 +89,7 @@ Enemy.prototype.recalibrate = function() {
 		this.x = this.xFROMxTile() * -1;
 		
 		//	reposition the enemy on a random vertical tile, but not in the water
-		//	(thus the lower limit is 1, not 0) and not on the last row, if the player
-		//	was just reset and hasn't been moved yet (don't kill the player before he's
-		//	had a chance to move)
+		//	(thus the lower limit is 1, not 0) and not on the 2 rows of grass tiles
 		this.yTile = randomValue(1, (canvasTilesY - 2));
 		this.y = this.yFROMyTile();
 		
@@ -99,9 +99,11 @@ Enemy.prototype.recalibrate = function() {
 };
 
 // Update the enemy's position, required method for game
-// Parameter: dt, a time delta between ticks -- IN SECONDS !!!!
+// Parameter: dt, a time delta between ticks -- IN (FRACTIONAL) SECONDS !!!!
 Enemy.prototype.update = function(dt) {
 
+	//	if there's time, I'll implement a pause function for the game but it may be a future
+	//	enhancement
 	if (scoreboard.pause === 0)	{
 		//	keep recalibrating properties of enemies that advance past the right
 		//	edge of the gameboard
@@ -111,7 +113,6 @@ Enemy.prototype.update = function(dt) {
 		this.x += (this.speed * dt);
 
 		//	check for a collision with the player; if so, execute the player's die() method;
-		//	we don't allow the player to die on the starting tile unless moves have occurred
 		if (this.collisionWithThat(player)) {
 			player.die();
 		}
@@ -125,10 +126,13 @@ Enemy.prototype.update = function(dt) {
 //***********************************************************************************
 //***********************************************************************************
 const SCORE_DELAY = 0.5;
+
+//	states for player and trinkets
 const PLAY = 0;
 const REST = 1;
 const DEAD = 2;
 
+//	defines the player start position on the board
 const playerStartX = canvasTilesX - 2;
 const playerStartY = canvasTilesY - 1;
 
@@ -140,7 +144,8 @@ let Player = function() {
 		
 	//	when the player reaches a scoring position, a multiple of this quantity
 	//	is added to the score; this rewards the user for keeping the player alive
-	//	over greater numbers of moves
+	//	over greater numbers of moves (maybe a low score should be rewarded intead, but
+	//	this sounds like as good a reason as any to reward a high score, which is easier to implement)
 	this.movesSinceReset = 0;
 	
 	//	this timer is refreshed whenever the player moves; it is used to delay resultant
@@ -150,12 +155,17 @@ let Player = function() {
 	//	this is the callback for processing keyboard events
 	this.handleInput = function(key) {
 		
+		//	facilitates detection of movement at the bottom of this function
 		let prevXtile = this.xTile;
 		let prevYtile = this.yTile;
 
 		//	ignore keyboard events unless the player is actually in play
 		if (this.state === PLAY) {
 			
+			//	sorry, but I'm placing the braces for switch statements as I do in C, not as Udacity
+			//	requires for JavaScript; it just DOESN'T look right to have the brace on the same line as 'switch';
+			//	there may be other places where my braces are aligned this way; I tried catching them all, but
+			//	I've coded this way in C for 30 years; it's pretty much automatic for me
 			switch (key)
 			{
 				case 'left':
@@ -198,17 +208,17 @@ let Player = function() {
 			}
 		
 			//	refresh the decayTimer; it may or may not cause something to happen when it
-			//	expires; depends on game state
+			//	expires; depends on object states
 			this.decayTimer = SCORE_DELAY;
 		}
 	};
 
 	//	when player dies via collision with enemy, shift the player off the right
-	//	edge of the gameboard so that recalibrate() will reset it to the start position
+	//	edge of the gameboard as an indicator to recalibrate() that it must be reset to the start position
 	this.die = function() {
 		
-		if (this.state === PLAY)
-		{
+		if (this.state === PLAY) {
+
 			this.xTile = canvasTilesX * 2;
 			this.movesSinceReset = 0;
 			scoreboard.movesUpdate(this.movesSinceReset);
@@ -225,16 +235,18 @@ let Player = function() {
 			scoreboard.points += (this.movesSinceReset * (scoreboard.gameLevel + 1));
 			scoreboard.scoreUpdate();
 			
-			//	the move counter is reset following a score; moves will next be tallied
+			//	the move counter is reset following a score; moves are now tallied
 			//	for the next scoring event
 			this.movesSinceReset = 0;
 			scoreboard.movesUpdate(this.movesSinceReset);
 
-			//	the player becomes a star to indicate scoring
+			//	the player sprite changes to signify scoring; refresh the decay timer to keep
+			//	the new sprite on the tile long enough to be visible
  			this.sprite = 'images/Star.png';
 			this.decayTimer = SCORE_DELAY;
 
-			//	this prevents scoring twice or more on the same tile; it also halts player movement
+			//	this prevents scoring twice or more on the same tile; it also suspends player movement
+			//	based on key presses
 			this.state = REST;			
 		}
 	};
@@ -260,11 +272,11 @@ let Player = function() {
 			
 			//	if the player has been located on a scoring tile for the decayTimer duration
 			//	(long enough to be rendered on the tile), score
-			if (this.timerExpired(dt) === true)
-			{
-				//	if player is on a top tile, just below the water
-				if (this.yTile === 1)
-				{
+			if (this.timerExpired(dt) === true) {
+				
+				//	if player is on a top tile, where all scoring positions are located
+				if (this.yTile === 1) {
+					
 					//	all top tiles are scoring tiles in level 0
 					if (scoreboard.gameLevel === 0) {
 						this.score();
@@ -273,13 +285,12 @@ let Player = function() {
 					} else {
 
 						allTrinkets.forEach(function(trinket) {
-							//	if the player occupies same tile as a trinket ...
-							if (trinket.xTile === this.xTile) {
-								//	score and begin score animation
+							//	if the player occupies same tile as a trinket in PLAY ...
+							if ((trinket.state === PLAY) && (trinket.xTile === this.xTile)) {
+								//	score and begin player's score animation
 								this.score();
-								//	trinket is temporarily removed from gameboard
-								trinket.xTile = 2 * canvasTilesX;
-								trinket.x = trinket.xFROMxTile();
+								//	launch trinket's score animation, too
+								trinket.state = REST;
 							}
 						}, this);
 					}
@@ -289,52 +300,50 @@ let Player = function() {
 			//	if the player is offscreen, it's a signal to reset his position
 			//	to the starting tile; this only happens when the player is killed by an enemy
 			if (this.xTile > canvasTilesX) {
-				//	starting x position is next-to-last horizontal tile
+				
 				this.xTile = playerStartX;
-				//	starting y position is centered over bottom tile
 				this.yTile = playerStartY;
 			
 				this.x = this.xFROMxTile();
 				this.y = this.yFROMyTile();
 			}
 			
-		//	player updates during REST state
+		//	for player updates during REST state ...
 		} else {
 
 			//	if the player is in the state REST, following a score ...
 			if (this.state === REST) {
 
-				//	the star will be returned to the starting row and column
-				//	set yTile and xTile to the final positions for use in comparison
+				//	the player will be returned to the starting row and column, so
+				//	set yTile and xTile to the final positions without setting x, y -- for comparison
 				this.yTile = playerStartY;
 				this.xTile = playerStartX;
-				//	if the star has returned to the starting row, swap back to the player sprite
+				
+				//	if the player has returned to the starting row, swap back to the normal sprite
 				//	and resume play
 				if (this.y >= this.yFROMyTile()) {
 					//	ensure starting x position is correct in case it wasn't corrected
 					//	before y position was corrected
+					this.y = this.yFROMyTile();
 					this.x = this.xFROMxTile();
 					this.state = PLAY;
 					this.sprite = 'images/char-boy.png';
+					
 					//	see whether the game level should be advanced and do it, if required
 					scoreboard.levelAdvance();
 					
-					
-				//	otherwise the star/player's position is to be corrected to the starting position
+				//	otherwise the player's position is to be corrected to the starting position
 				} else {
 				
-					//	whether the decayTimer just expired or has been expired for a while,
-					//	lower the player to the starting row,column
-					if ((this.decayTimer <= 0.0) || (this.timerExpired(dt) === true)) {
-						let fs = fastSpeed * dt;
-						//	y correction
-						this.y += fs;
-						//	x correction
-						let xDelta = this.x - this.xFROMxTile();
-						if (Math.abs(xDelta) > fs) {
-							if (xDelta > 0) this.x -= fs;
-							else if (xDelta < 0) this.x += fs;
-						}
+					//	lower the player to the starting row,column as quickly as possible
+					let fs = fastSpeed * dt;
+					//	y correction
+					this.y += fs;
+					//	x correction, avoiding horizontal jitter
+					let xDelta = this.x - this.xFROMxTile();
+					if (Math.abs(xDelta) > fs) {
+						if (xDelta > 0) this.x -= fs;
+						else if (xDelta < 0) this.x += fs;
 					}
 				}
 			}
@@ -350,11 +359,71 @@ Player.prototype = Entity.prototype;
 //***********************************************************************************
 //***********************************************************************************
 function Trinket() {
+	//	the trinket's avatar will be initialized from the levelData object
 	this.sprite = "";
+	
+	this.state = PLAY;
+	
+	this.init = function(level) {
+		//	set the gamepiece for the new trinket
+		this.sprite = levelData[level].addedTrinket;
+		this.yTile = 1;
+		this.y = this.yFROMyTile();
+			
+		//	construct an array of all xTile properties of trinkets created so far (except this one)
+		let placedTrinkets = allTrinkets.map(function(item) {
+			if ((item.xTile !== null) && (item !== this) && (item.state !== DEAD))
+			{
+				return(item.xTile);
+			}
+		}, this);
+		
+		//	construct another array of all xTile properties excluding what are listed in placedTrinkets
+		let tileCols = [];
+		for (let i = 0; i < canvasTilesX; i++)
+		{
+			if (placedTrinkets.includes(i) === false)
+			{
+				tileCols.push(i);
+			}
+		}
+		
+		//	take a random sample of available xTile values as this trinket's xTile value
+		this.xTile = tileCols[randomValue(0, tileCols.length)]
+		this.x = this.xFROMxTile();
+		
+		this.state = PLAY;
+	};
+
+	
+	this.update = function(dt) {
+
+		//	if the trinket's state indicates it is to be or is being removed from the board ...
+		if (this.state === REST) {
+
+			//	use the "selector" image for the trinket from this point forward
+			this.sprite = "images/Selector.png";
+			//	this is the trinket's ultimate destination -- 3 tiles below the bottom of the board,
+			//	out of sight
+			this.yTile = canvasTilesY + 3;
+
+			//	once the trinket has reached its final destination, mark it inactive
+			if (this.y >= this.yFROMyTile()) {
+
+				this.state = DEAD;
+									
+				//	otherwise, animate the trip to the final destination
+			} else {
+				
+				this.y += (fastSpeed * dt);
+			}
+		}
+	};	
 }
 
 Trinket.prototype = Entity.prototype;
 
+//	array of all trinkets -- active (PLAY, REST) or inactive (DEAD) -- on (or off) the canvas
 let allTrinkets = [];
 
 //***********************************************************************************
@@ -418,25 +487,21 @@ function Scoreboard() {
 			//	each level is harder: an additional enemy is added
 			allEnemies.push(new Enemy());
 			
+			//	destroy the trinket array and reconstruct it
+			allTrinkets.length = 0;
+				
+			this.levelUpdate();
+
+		//	if no level advance is required ...
+		}
+			
+		//	if scoring occurred, the trinkets have been moved off the board -- resupply them
+		for (let i = 0; i < this.gameLevel; i++) {
 			//	the number of trinkets on the gameboard corresponds to the game level
 			allTrinkets.push(new Trinket());
-						
 			//	set the gamepiece for the new trinket
-			allTrinkets[allTrinkets.length - 1].sprite = levelData[this.gameLevel].addedTrinket;
-			//	reposition as many trinkets as are on the board -- each must be located on the
-			//	top row beneath the water, yTile === 1; there is no point in randomizing the xTile
-			//	assignment, since there are only 5 columns
-			allTrinkets.forEach(function(trinket) {
-				trinket.yTile = 1;
-				trinket.y = trinket.yFROMyTile();
-				trinket.xTile = idx;
-				trinket.x = trinket.xFROMxTile();
-				idx += 2;
-			});
-			
-			
-			this.levelUpdate();
-		}
+			allTrinkets[allTrinkets.length - 1].init(this.gameLevel);				
+		}			
 	};
 
 	
@@ -464,7 +529,7 @@ function Scoreboard() {
 // Place all enemy objects in an array called allEnemies
 // Place the player object in a variable called player
 let allEnemies = [];
-for (let i = 0; i < enemyCount; i++)
+for (let i = 0; i < initialEnemyCount; i++)
 {
 	allEnemies.push(new Enemy());
 }

@@ -91,10 +91,16 @@ var Engine = (function(global) {
      * render methods.
      */
     function updateEntities(dt) {
-        allEnemies.forEach(function(enemy) {
+
+		allEnemies.forEach(function(enemy) {
             enemy.update(dt);
         });
+
         player.update(dt);
+
+		allTrinkets.forEach(function(z) {
+			z.update(dt);
+		});
     }
 
     /* This function initially draws the "game level", it will then call
@@ -182,7 +188,8 @@ var Engine = (function(global) {
 		'images/Star.png',
 		'images/Gem Blue.png',
 		'images/Gem Green.png',
-		'images/Gem Orange.png'
+		'images/Gem Orange.png',
+		'images/Selector.png'
     ]);
     Resources.onReady(init);
 

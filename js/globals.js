@@ -25,8 +25,6 @@ const canvasHeight = tileAbsHeight + ((canvasTilesY - 1) * tileVisHeight);
 //	this centers the entity vertically on a visible tile
 const entityVerticalShift = (tileAbsHeight - tileVisHeight) / 4;
 
-//const canvasHeight = 500;
-
 //	these speed settings for enemy bugs are entirely arbitrary, in pixels/sec;
 //	set the slowest speed so that it takes 2 seconds to cross the canvas;
 //	set the highest speed at a multiple of that
@@ -34,8 +32,8 @@ const slowSpeed = canvasWidth / 2;
 const fastSpeed = slowSpeed * 3;
 
 //	this isn't specified in the project rubric, so I've just picked a number; in a multi-level game
-//	it should be less on easier levels and more on higher levels
-const enemyCount = 3;
+//	it will be increased on each game level
+const initialEnemyCount = 2;
 
 //	array of objects defining game characteristics per game level;
 //	pointThresh:	when the points exceed this value, the level will be incremented
@@ -44,20 +42,19 @@ const enemyCount = 3;
 const levelData = [
 
 	//	level 0 characteristics
-//	{	"pointThresh"	:	16,
-	{	"pointThresh"	:	4,
+	{	"pointThresh"	:	8,
 		"addedTrinket"	:	null,
 		"instruction"	:	"Reach the water, avoiding enemy collisions!"
 	},
 	
 	//	level 1 characteristics
-	{	"pointThresh"	:	48,
+	{	"pointThresh"	:	32,
 		"addedTrinket"	:	"images/Gem Blue.png",
 		"instruction"	:	"Reach 1 gem, avoiding enemy collisions!"
 	},
 	
 	//	level 2 characteristics
-	{	"pointThresh"	:	96,
+	{	"pointThresh"	:	64,
 		"addedTrinket"	:	"images/Gem Green.png",
 		"instruction"	:	"Reach 2 gems, avoiding enemy collisions!"
 	},
