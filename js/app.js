@@ -250,8 +250,7 @@ let Player = function() {
 			//	to restart the game, there must be a number of active (PLAY) trinkets equal to the
 			//	current game level
 			let missingTrinkets = scoreboard.gameLevel - activeTrinkets.length;
-			while (missingTrinkets > 0)
-			{
+			while (missingTrinkets > 0) {
 				allTrinkets.push(new Trinket());
 				allTrinkets[allTrinkets.length - 1].init(scoreboard.gameLevel);
 				missingTrinkets--;
@@ -268,8 +267,7 @@ let Player = function() {
 			let activeTrinkets = allTrinkets.filter(function(item) {return (item.state === PLAY);});
 			//	for levels with multiple trinkets on the board at once, scoring only occurs when all visible
 			//	trinkets have been gathered
-			if (activeTrinkets.length < 2)
-			{
+			if (activeTrinkets.length < 2) {
 				//	point quantity awarded at a scoring position depends on the game level; higher
 				//	levels garner more points per score
 				scoreboard.points += (this.movesSinceReset * (scoreboard.gameLevel + 1));
@@ -297,8 +295,7 @@ let Player = function() {
 
 		if (this.decayTimer > 0.0) {
 			this.decayTimer -= dt;
-			if (this.decayTimer <= 0.0)
-			{
+			if (this.decayTimer <= 0.0) {
 				return true;
 			}
 		}
@@ -413,18 +410,15 @@ function Trinket() {
 			
 		//	construct an array of all xTile properties of trinkets created so far (except this one)
 		let placedTrinkets = allTrinkets.map(function(item) {
-			if ((item.xTile !== null) && (item !== this) && (item.state !== DEAD))
-			{
+			if ((item.xTile !== null) && (item !== this) && (item.state !== DEAD)) {
 				return(item.xTile);
 			}
 		}, this);
 		
 		//	construct another array of all xTile properties excluding what are listed in placedTrinkets
 		let tileCols = [];
-		for (let i = 0; i < canvasTilesX; i++)
-		{
-			if (placedTrinkets.includes(i) === false)
-			{
+		for (let i = 0; i < canvasTilesX; i++) {
+			if (placedTrinkets.includes(i) === false) {
 				tileCols.push(i);
 			}
 		}
@@ -593,8 +587,7 @@ function Scoreboard() {
 // Place all enemy objects in an array called allEnemies
 // Place the player object in a variable called player
 let allEnemies = [];
-for (let i = 0; i < initialEnemyCount; i++)
-{
+for (let i = 0; i < initialEnemyCount; i++) {
 	allEnemies.push(new Enemy());
 }
 
