@@ -1,6 +1,48 @@
-frontend-nanodegree-arcade-game
-===============================
+# udacity_arcade_game
 
-Students should use this [rubric](https://review.udacity.com/#!/projects/2696458597/rubric) for self-checking their submission. Make sure the functions you write are **object-oriented** - either class functions (like Player and Enemy) or class prototype functions such as Enemy.prototype.checkCollisions, and that the keyword 'this' is used appropriately within your class and class prototype functions to refer to the object the function is called upon. Also be sure that the **readme.md** file is updated with your instructions on both how to 1. Run and 2. Play your arcade game.
+## Udacity Arcade Game Project
 
-For detailed instructions on how to get started, check out this [guide](https://docs.google.com/document/d/1v01aScPjSWCCWQLIpFqvg3-vXLH2e8_SZQKC8jNO0Dc/pub?embedded=true).
+This is a project for Udacity's Front-End Development program.  It is an arcade-style game combining HTML, CSS, and JavaScript.
+
+## Dependencies
+
+* ./css/style.css
+
+* ./js/globals.js
+* ./js/app.js
+* ./js/engine.js
+* ./js/resources.js
+
+* ./images/geometry2.png
+* ./images/char-boy.png
+* ./images/enemy-bug.png
+* ./images/Gem Blue.png
+* ./images/Gem Green.png
+* ./images/Gem Orange.png
+* ./images/Star.png
+* ./images/Selector.png
+* ./images/stone-block.png
+* ./images/water-block.png
+* ./images/grass-block.png
+
+* ./index.html
+
+## Setup
+
+Open index.html in a modern browser to start the game.  Use the keyboard up/down/right/left arrows to move the player piece.
+
+## Objective
+
+There are 3 game levels.  The game is concluded when 300 points are amassed.
+
+In level 0, points are awarded when the player reaches the row of stone blocks (the scoring position) beneath the water.  Any collision with a bug will reset play without points being awarded.  Points are awarded as the number of moves required to reach the scoring position.
+
+In level 1, points are awarded when the player reaches the blue gemstone.  Collisions with bugs reset play with no points awarded.  Points are awarded as the number of moves required to reach the gemstone, multiplied by 2.
+
+In level 2, points are awarded when the player reaches both green gemstones while avoiding contact with the bugs.  Points are awarded as three times the number of moves to reach both gemstones.
+
+In level 3, points are awareded when the player reaches the three orange gemstones while avoiding contact with the bugs.  Points are awarded as four times the number of moves to reach the three gemstones.
+
+## Contributing
+
+This code is a class project, and contributions are not accepted.
