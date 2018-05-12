@@ -45,6 +45,7 @@ body {
 
 .final-info {
 	position: absolute;
+	margin-top: 25%;
 }
 
 .invisible {
@@ -56,9 +57,13 @@ body {
 	padding: 0px;
 }
 
+.final-info h1 {
+	font-weight: bold;
+}
+
 .right-just {
 	display: inline-block;
-	min-width: 180px;
+	min-width: 250px;
 }
 
 h1 {
@@ -82,6 +87,7 @@ h1 {
 .move-count,
 .level-count,
 .game-score,
+.final-moves,
 .final-count,
 .right-just,
 .instructions {

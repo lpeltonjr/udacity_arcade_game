@@ -35,6 +35,9 @@ const fastSpeed = slowSpeed * 3;
 //	it will be increased on each game level
 const initialEnemyCount = 2;
 
+//	scores higher than this will end the game
+const gameOverScore = 300;
+
 //	array of objects defining game characteristics per game level;
 //	pointThresh:	when the points exceed this value, the level will be incremented
 //	addedTrinket:	these are placed on the top row; player must reach them to score

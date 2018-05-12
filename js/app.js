@@ -3,6 +3,28 @@ function randomValue(lowerLimit, upperLimit) {
 	return (Math.floor(Math.random() * (upperLimit - lowerLimit)) + lowerLimit);
 }
 
+//	this reloads the page, effectively restarting the game
+function resetGame(event) {
+	document.location.reload();
+}
+
+//	this is the very end of the game
+function showClosingMessage() {
+
+	//	perform last-minute updates to the final score information:
+		//	set the move count
+	document.querySelector(".final-moves").textContent = scoreboard.totalScoringMoves.toString();
+	document.querySelector(".final-count").textContent = scoreboard.points.toString();
+
+	//	activate the restart icon on the final page
+	document.querySelector(".final-restart").addEventListener("click", resetGame);
+	
+	//	remove the game and make the final score page visible
+	document.querySelector(".score-panel").remove();
+	document.querySelector(".instructions").remove();
+	document.querySelector("canvas").remove();
+	document.querySelector(".final-info").classList.toggle("invisible", false);
+}
 
 //***********************************************************************************
 //***********************************************************************************
@@ -233,7 +255,7 @@ let Player = function() {
 			//	point quantity awarded at a scoring position depends on the game level; higher
 			//	levels garner more points per score
 			scoreboard.points += (this.movesSinceReset * (scoreboard.gameLevel + 1));
-			scoreboard.scoreUpdate();
+			scoreboard.scoreUpdate(this.movesSinceReset);
 			
 			//	the move counter is reset following a score; moves are now tallied
 			//	for the next scoring event
@@ -438,6 +460,9 @@ function Scoreboard() {
 	//	this is a reference to the "moves" counter in the HTML
 	this.movesElement = null;
 	
+	//	tracks cumulative total of moves that resulted in scoring
+	this.totalScoringMoves = 0;
+	
 	this.points = 0;
 	//	this is a reference to the "points" counter in the HTML
 	this.pointsElement = null;
@@ -458,10 +483,11 @@ function Scoreboard() {
 	};
 	
 	//	this method is called when the player has scored
-	this.scoreUpdate = function() {
+	this.scoreUpdate = function(moves) {
 		
 		if (this.pointsElement !== null) {
 			this.pointsElement.textContent = this.points.toString();
+			this.totalScoringMoves += moves;
 		}
 	};
 	
@@ -474,7 +500,8 @@ function Scoreboard() {
 		document.querySelector(".instructions").textContent = levelData[this.gameLevel].instruction;
 	};
 	
-	//	checks for necessity of advancing game level based on score; does this if required
+	//	checks for necessity of advancing game level based on score; does this if required;
+	//	also checks whether game is over based on scoring threshold
 	this.levelAdvance = function() {
 
 		//	list the trinkets currently in the PLAY state on the gameboard
@@ -482,29 +509,40 @@ function Scoreboard() {
 
 		//	the game level cannot be advanced until all visible trinkets have been collected
 		if (activeTrinkets.length === 0) {
-			//	when a point threshold for a particular game level is reached, advance the game
-			//	to the next level
-			if (this.points >= levelData[this.gameLevel].pointThresh) {
 
-				this.gameLevel++;
-			
-				//	each level is harder: an additional enemy is added
-				allEnemies.push(new Enemy());
-			
-				//	destroy the trinket array and reconstruct it
-				allTrinkets.length = 0;
+			//	if game over scoring threshold is breached
+			if (this.points >= gameOverScore) {
 				
-				this.levelUpdate();
-			}
+				showClosingMessage();
+				
+			//	else if play continues ...
+			} else {
+				
 			
-			//	if scoring occurred, the trinkets have been moved off the board -- resupply them when
-			//	they're all off the board
-			for (let i = 0; i < this.gameLevel; i++) {
-				//	the number of trinkets on the gameboard corresponds to the game level
-				allTrinkets.push(new Trinket());
-				//	set the gamepiece for the new trinket
-				allTrinkets[allTrinkets.length - 1].init(this.gameLevel);				
-			}			
+				//	when a point threshold for a particular game level is reached, advance the game
+				//	to the next level
+				if (this.points >= levelData[this.gameLevel].pointThresh) {
+
+					this.gameLevel++;
+			
+					//	each level is harder: an additional enemy is added
+					allEnemies.push(new Enemy());
+			
+					//	destroy the trinket array and reconstruct it
+					allTrinkets.length = 0;
+				
+					this.levelUpdate();
+				}
+			
+				//	if scoring occurred, the trinkets have been moved off the board -- resupply them when
+				//	they're all off the board
+				for (let i = 0; i < this.gameLevel; i++) {
+					//	the number of trinkets on the gameboard corresponds to the game level
+					allTrinkets.push(new Trinket());
+					//	set the gamepiece for the new trinket
+					allTrinkets[allTrinkets.length - 1].init(this.gameLevel);				
+				}
+			}
 		}
 	};
 
@@ -519,7 +557,7 @@ function Scoreboard() {
 		if (this.pointsElement === null) {
 			this.pointsElement = document.querySelector(".score-num");
 		}
-		this.scoreUpdate();
+		this.scoreUpdate(0);
 		
 		if (this.levelElement === null) {
 			this.levelElement = document.querySelector(".level-num");
