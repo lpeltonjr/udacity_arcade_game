@@ -48,21 +48,21 @@ const levelData = [
 	},
 	
 	//	level 1 characteristics
-	{	"pointThresh"	:	32,
+	{	"pointThresh"	:	48,
 		"addedTrinket"	:	"images/Gem Blue.png",
-		"instruction"	:	"Reach 1 gem, avoiding enemy collisions!"
+		"instruction"	:	"Gather 1 gem, avoiding enemy collisions!"
 	},
 	
 	//	level 2 characteristics
-	{	"pointThresh"	:	64,
+	{	"pointThresh"	:	92,
 		"addedTrinket"	:	"images/Gem Green.png",
-		"instruction"	:	"Reach 2 gems, avoiding enemy collisions!"
+		"instruction"	:	"Gather 2 gems, avoiding enemy collisions!"
 	},
 	
 	//	level 3 characteristics
 	{	"pointThresh"	:	10000,
 		"addedTrinket"	:	"images/Gem Orange.png",
-		"instruction"	:	"Reach 3 gems, avoiding enemy collisions!"
+		"instruction"	:	"Gather 3 gems, avoiding enemy collisions!"
 	}
 ];
 

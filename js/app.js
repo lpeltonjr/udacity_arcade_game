@@ -445,7 +445,7 @@ function Scoreboard() {
 	this.gameLevel = 0;
 	this.levelElement = null;
 	
-	//	this property may be used to pause game play
+	//	this property may be used to pause game play, if coded (haven't done that yet)
 	this.pause = 0;
 	
 	//	this method is called whenever the player is moved
@@ -474,34 +474,38 @@ function Scoreboard() {
 		document.querySelector(".instructions").textContent = levelData[this.gameLevel].instruction;
 	};
 	
+	//	checks for necessity of advancing game level based on score; does this if required
 	this.levelAdvance = function() {
 
-		let idx = 0;
+		//	list the trinkets currently in the PLAY state on the gameboard
+		let activeTrinkets = allTrinkets.filter(function(item) {return (item.state === PLAY);});
 
-		//	when a point threshold for a particular game level is reached, advance the game
-		//	to the next level
-		if (this.points >= levelData[this.gameLevel].pointThresh) {
+		//	the game level cannot be advanced until all visible trinkets have been collected
+		if (activeTrinkets.length === 0) {
+			//	when a point threshold for a particular game level is reached, advance the game
+			//	to the next level
+			if (this.points >= levelData[this.gameLevel].pointThresh) {
 
-			this.gameLevel++;
+				this.gameLevel++;
 			
-			//	each level is harder: an additional enemy is added
-			allEnemies.push(new Enemy());
+				//	each level is harder: an additional enemy is added
+				allEnemies.push(new Enemy());
 			
-			//	destroy the trinket array and reconstruct it
-			allTrinkets.length = 0;
+				//	destroy the trinket array and reconstruct it
+				allTrinkets.length = 0;
 				
-			this.levelUpdate();
-
-		//	if no level advance is required ...
-		}
+				this.levelUpdate();
+			}
 			
-		//	if scoring occurred, the trinkets have been moved off the board -- resupply them
-		for (let i = 0; i < this.gameLevel; i++) {
-			//	the number of trinkets on the gameboard corresponds to the game level
-			allTrinkets.push(new Trinket());
-			//	set the gamepiece for the new trinket
-			allTrinkets[allTrinkets.length - 1].init(this.gameLevel);				
-		}			
+			//	if scoring occurred, the trinkets have been moved off the board -- resupply them when
+			//	they're all off the board
+			for (let i = 0; i < this.gameLevel; i++) {
+				//	the number of trinkets on the gameboard corresponds to the game level
+				allTrinkets.push(new Trinket());
+				//	set the gamepiece for the new trinket
+				allTrinkets[allTrinkets.length - 1].init(this.gameLevel);				
+			}			
+		}
 	};
 
 	
