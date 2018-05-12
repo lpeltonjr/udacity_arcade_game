@@ -147,7 +147,7 @@ Enemy.prototype.update = function(dt) {
 //	the Player class
 //***********************************************************************************
 //***********************************************************************************
-const SCORE_DELAY = 0.5;
+const SCORE_DELAY = 0.33;
 
 //	states for player and trinkets
 const PLAY = 0;
@@ -244,6 +244,18 @@ let Player = function() {
 			this.xTile = canvasTilesX * 2;
 			this.movesSinceReset = 0;
 			scoreboard.movesUpdate(this.movesSinceReset);
+
+			//	list the trinkets currently in the PLAY state on the gameboard
+			let activeTrinkets = allTrinkets.filter(function(item) {return (item.state === PLAY);});
+			//	to restart the game, there must be a number of active (PLAY) trinkets equal to the
+			//	current game level
+			let missingTrinkets = scoreboard.gameLevel - activeTrinkets.length;
+			while (missingTrinkets > 0)
+			{
+				allTrinkets.push(new Trinket());
+				allTrinkets[allTrinkets.length - 1].init(scoreboard.gameLevel);
+				missingTrinkets--;
+			}
 		}
 	};
 	
@@ -252,15 +264,22 @@ let Player = function() {
 
 		if (this.state === PLAY) {
 			
-			//	point quantity awarded at a scoring position depends on the game level; higher
-			//	levels garner more points per score
-			scoreboard.points += (this.movesSinceReset * (scoreboard.gameLevel + 1));
-			scoreboard.scoreUpdate(this.movesSinceReset);
+			//	list the trinkets currently in the PLAY state on the gameboard
+			let activeTrinkets = allTrinkets.filter(function(item) {return (item.state === PLAY);});
+			//	for levels with multiple trinkets on the board at once, scoring only occurs when all visible
+			//	trinkets have been gathered
+			if (activeTrinkets.length < 2)
+			{
+				//	point quantity awarded at a scoring position depends on the game level; higher
+				//	levels garner more points per score
+				scoreboard.points += (this.movesSinceReset * (scoreboard.gameLevel + 1));
+				scoreboard.scoreUpdate(this.movesSinceReset);
 			
-			//	the move counter is reset following a score; moves are now tallied
-			//	for the next scoring event
-			this.movesSinceReset = 0;
-			scoreboard.movesUpdate(this.movesSinceReset);
+				//	the move counter is reset following a score; moves are now tallied
+				//	for the next scoring event
+				this.movesSinceReset = 0;
+				scoreboard.movesUpdate(this.movesSinceReset);
+			}
 
 			//	the player sprite changes to signify scoring; refresh the decay timer to keep
 			//	the new sprite on the tile long enough to be visible
@@ -526,7 +545,10 @@ function Scoreboard() {
 					this.gameLevel++;
 			
 					//	each level is harder: an additional enemy is added
-					allEnemies.push(new Enemy());
+					if (allEnemies.length < maxEnemyCount) {
+					
+						allEnemies.push(new Enemy());
+					}
 			
 					//	destroy the trinket array and reconstruct it
 					allTrinkets.length = 0;

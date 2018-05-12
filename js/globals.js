@@ -29,11 +29,13 @@ const entityVerticalShift = (tileAbsHeight - tileVisHeight) / 4;
 //	set the slowest speed so that it takes 2 seconds to cross the canvas;
 //	set the highest speed at a multiple of that
 const slowSpeed = canvasWidth / 2;
-const fastSpeed = slowSpeed * 3;
+const fastSpeed = slowSpeed * 2;
 
 //	this isn't specified in the project rubric, so I've just picked a number; in a multi-level game
 //	it will be increased on each game level
 const initialEnemyCount = 2;
+//	more than 3 enemies and the game becomes too hard
+const maxEnemyCount = 3;
 
 //	scores higher than this will end the game
 const gameOverScore = 300;
