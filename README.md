@@ -41,7 +41,7 @@ In level 1, points are awarded when the player reaches the blue gemstone.  Colli
 
 In level 2, points are awarded when the player reaches both green gemstones while avoiding contact with the bugs.  Points awarded are three times the number of moves to reach both gemstones.  Amassing at least 92 points in level 2 will advance the game to level 3.
 
-In level 3, points are awareded when the player reaches the three orange gemstones while avoiding contact with the bugs.  Points awarded are four times the number of moves to reach the three gemstones.
+In level 3, points are awarded when the player reaches the three orange gemstones while avoiding contact with the bugs.  Points awarded are four times the number of moves to reach the three gemstones.
 
 ## Contributing
 
