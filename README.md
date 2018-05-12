@@ -35,11 +35,11 @@ Open index.html in a modern browser to start the game.  Use the keyboard up/down
 
 There are 3 game levels.  The game is concluded when 300 points are amassed.
 
-In level 0, points are awarded when the player reaches the row of stone blocks (the scoring position) beneath the water.  Any collision with a bug will reset play without points being awarded.  Points are awarded as the number of moves required to reach the scoring position.
+In level 0, points are awarded when the player reaches the row of stone blocks (the scoring position) beneath the water.  Any collision with a bug will reset play without points being awarded.  Points awarded are the number of moves required to reach the scoring position.  Amassing at least 8 points in level 0 will advance the game to level 1.
 
-In level 1, points are awarded when the player reaches the blue gemstone.  Collisions with bugs reset play with no points awarded.  Points are awarded as the number of moves required to reach the gemstone, multiplied by 2.
+In level 1, points are awarded when the player reaches the blue gemstone.  Collisions with bugs reset play with no points awarded.  Points awarded are the number of moves required to reach the gemstone, multiplied by 2. Amassing at least 48 points in level 1 will advance the game to level 2.
 
-In level 2, points are awarded when the player reaches both green gemstones while avoiding contact with the bugs.  Points are awarded as three times the number of moves to reach both gemstones.
+In level 2, points are awarded when the player reaches both green gemstones while avoiding contact with the bugs.  Points are awarded as three times the number of moves to reach both gemstones.  Amassing at least 92 points in level 2 will advance the game to level 3.
 
 In level 3, points are awareded when the player reaches the three orange gemstones while avoiding contact with the bugs.  Points are awarded as four times the number of moves to reach the three gemstones.
 
