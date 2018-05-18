@@ -98,7 +98,8 @@ let Enemy = function() {
 };
 
 //	an Enemy is an Entity, no matter how bad
-Enemy.prototype = Entity.prototype;
+Enemy.prototype = Object.create(Entity.prototype);
+Enemy.prototype.constructor = Enemy;
 
 //	this handles enemy movement: x and y positions, as well as speed,
 //	are recalibrated after an enemy passes beyond right border of the gameboard;
@@ -389,7 +390,8 @@ let Player = function() {
 	};
 };
 
-Player.prototype = Entity.prototype;
+Player.prototype = Object.create(Entity.prototype);
+Player.prototype.constructor = Player;
 
 //***********************************************************************************
 //***********************************************************************************
@@ -401,62 +403,63 @@ function Trinket() {
 	this.sprite = "";
 	
 	this.state = PLAY;
-	
-	this.init = function(level) {
-		//	set the gamepiece for the new trinket
-		this.sprite = levelData[level].addedTrinket;
-		this.yTile = 1;
-		this.y = this.yFROMyTile();
-			
-		//	construct an array of all xTile properties of trinkets created so far (except this one)
-		let placedTrinkets = allTrinkets.map(function(item) {
-			if ((item.xTile !== null) && (item !== this) && (item.state !== DEAD)) {
-				return(item.xTile);
-			}
-		}, this);
-		
-		//	construct another array of all xTile properties excluding what are listed in placedTrinkets
-		let tileCols = [];
-		for (let i = 0; i < canvasTilesX; i++) {
-			if (placedTrinkets.includes(i) === false) {
-				tileCols.push(i);
-			}
-		}
-		
-		//	take a random sample of available xTile values as this trinket's xTile value
-		this.xTile = tileCols[randomValue(0, tileCols.length)]
-		this.x = this.xFROMxTile();
-		
-		this.state = PLAY;
-	};
-
-	
-	this.update = function(dt) {
-
-		//	if the trinket's state indicates it is to be or is being removed from the board ...
-		if (this.state === REST) {
-
-			//	use the "selector" image for the trinket from this point forward
-			this.sprite = "images/Selector.png";
-			//	this is the trinket's ultimate destination -- 3 tiles below the bottom of the board,
-			//	out of sight
-			this.yTile = canvasTilesY + 3;
-
-			//	once the trinket has reached its final destination, mark it inactive
-			if (this.y >= this.yFROMyTile()) {
-
-				this.state = DEAD;
-									
-				//	otherwise, animate the trip to the final destination
-			} else {
-				
-				this.y += (fastSpeed * dt);
-			}
-		}
-	};	
 }
 
-Trinket.prototype = Entity.prototype;
+Trinket.prototype = Object.create(Entity.prototype);
+Trinket.prototype.constructor = Trinket;
+
+Trinket.prototype.update = function(dt) {
+
+	//	if the trinket's state indicates it is to be or is being removed from the board ...
+	if (this.state === REST) {
+
+		//	use the "selector" image for the trinket from this point forward
+		this.sprite = "images/Selector.png";
+		//	this is the trinket's ultimate destination -- 3 tiles below the bottom of the board,
+		//	out of sight
+		this.yTile = canvasTilesY + 3;
+
+		//	once the trinket has reached its final destination, mark it inactive
+		if (this.y >= this.yFROMyTile()) {
+
+			this.state = DEAD;
+									
+		//	otherwise, animate the trip to the final destination
+		} else {
+				
+			this.y += (fastSpeed * dt);
+		}
+	}	
+};
+
+Trinket.prototype.init = function(level) {
+
+	//	set the gamepiece for the new trinket
+	this.sprite = levelData[level].addedTrinket;
+	this.yTile = 1;
+	this.y = this.yFROMyTile();
+			
+	//	construct an array of all xTile properties of trinkets created so far (except this one)
+	let placedTrinkets = allTrinkets.map(function(item) {
+		if ((item.xTile !== null) && (item !== this) && (item.state !== DEAD)) {
+			return(item.xTile);
+		}
+	}, this);
+		
+	//	construct another array of all xTile properties excluding what are listed in placedTrinkets
+	let tileCols = [];
+	for (let i = 0; i < canvasTilesX; i++) {
+		if (placedTrinkets.includes(i) === false) {
+			tileCols.push(i);
+		}
+	}
+		
+	//	take a random sample of available xTile values as this trinket's xTile value
+	this.xTile = tileCols[randomValue(0, tileCols.length)]
+	this.x = this.xFROMxTile();
+		
+	this.state = PLAY;	
+};
 
 //	array of all trinkets -- active (PLAY, REST) or inactive (DEAD) -- on (or off) the canvas
 let allTrinkets = [];
